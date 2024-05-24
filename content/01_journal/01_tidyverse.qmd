@@ -1,98 +1,148 @@
 ---
 title: "Tidyverse"
-author: "Joschka Schwarz"
+author: "Davis Rakhshan"
 ---
 
-::: callout-note
-You can delete everything in here and start fresh.
-:::
-
-This is a `.qmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
-# Text Formatting
-
-*italics* and **bold**
-
-superscript^2^ / subscript~2~
-
-~~strikethrough~~
-
-`verbatim code`
-
-> Blockquote
-
-# Headings
-
-## Header 2
-### Header 3
-#### Header 4
-##### Header 5
-###### Header 6
-
-# Links & Images
-
-<https://quarto.org>
-
-[Quarto](https://quarto.org)
-
-![Caption](../../assets/img/elephant.png)
-
-[![Caption](../../assets/img/elephant.png)](https://quarto.org)
-
-[![Caption](../../assets/img/elephant.png)](https://quarto.org "An elephant")
-
-
-# Lists
-
-* unordered list
-    + sub-item 1
-    + sub-item 2
-        - sub-sub-item 1
-        
-*   item 2
-
-    Continued (indent 4 spaces)
-    
-    
-1. ordered list
-2. item 2
-    i) sub-item 1
-         A.  sub-sub-item 1
-         
-(@)  A list whose numbering
-
-continues after
-
-(@)  an interruption
-
-# Tables
-
-| Right | Left | Default | Center |
-|------:|:-----|---------|:------:|
-|   12  |  12  |    12   |    12  |
-|  123  |  123 |   123   |   123  |
-|    1  |    1 |     1   |     1  |
-
-# Source Code
-
-Use ``` to delimit blocks of source code:
-
-```
-code
-```
-
-Add a language to syntax highlight code blocks:
 
 ```{r}
-1 + 1
-```
+# Challenge
+library(tidyverse)
+library(tidyquant)
+library(broom)
+library(umap)
 
-```{r}
-cars
-```
+# Step 1
+sp_500_daily_returns_tbl <- readRDS("../../scripts/data/sp_500_prices_tbl.rds")
 
-```{r}
-plot(cars)
+# Perform the operations
+sp_500_daily_returns_tbl <- sp_500_daily_returns_tbl %>%
+  # Select the necessary columns
+  select(symbol, date, adjusted) %>%
+  # Filter the data to include only dates from 2018 and beyond
+  filter(as.Date(date) >= as.Date("2018-01-01")) %>%
+  # Group by symbol
+  group_by(symbol) %>%
+  # Compute the lag of 1 day on the adjusted stock price
+  mutate(lag_adjusted = lag(adjusted, 1)) %>%
+  # Remove NA values from the lagging operation
+  filter(!is.na(lag_adjusted)) %>%
+  # Compute the difference between adjusted and the lag
+  mutate(diff = adjusted - lag_adjusted) %>%
+  # Compute the percentage difference
+  mutate(pct_return = (diff / lag_adjusted)) %>%
+  # Select only the symbol, date, and pct_return columns
+  select(symbol, date, pct_return) %>%
+  # Sort by symbol
+  arrange(symbol)
+
+
+# Display the resulting data frame
+sp_500_daily_returns_tbl
+
+# Step 2
+# Convert the data frame to the desired format
+stock_date_matrix_tbl <- sp_500_daily_returns_tbl %>%
+  # Spread the date column to wide format with pct_return as values
+  pivot_wider(names_from = date, values_from = pct_return, values_fill = list(pct_return = 0)) %>%
+  ungroup
+
+# Display the resulting data frame
+stock_date_matrix_tbl
+
+# Step 3
+# Impute missing values with column means and convert to user-item format
+stock_date_matrix_numeric_imputed <- stock_date_matrix_tbl %>%
+  select(-symbol) 
+  #%>% pivot_wider(names_from = date, values_from = pct_return, values_fill = mean, values_fn = list(pct_return = mean))
+
+# Perform K-Means clustering with centers = 4 and nstart = 20
+set.seed(123) # Setting a seed for reproducibility
+kmeans_obj <- kmeans(stock_date_matrix_numeric_imputed, centers = 4, nstart = 20)
+
+# Use glance() to get the tot.withinss
+kmeans_summary <- glance(kmeans_obj)
+
+# Print the tot.withinss
+print("Total within-cluster sum of squares (tot.withinss):")
+print(kmeans_summary$tot.withinss)
+
+
+# Step 4
+kmeans_mapper <- function(center = 3) {
+  stock_date_matrix_tbl %>%
+    select(-symbol) %>%
+    kmeans(centers = center, nstart = 20)
+}
+
+
+# Create a tibble with column centers from 1 to 30
+centers_tbl <- tibble(centers = 1:30)
+
+# Add a column named k_means with the kmeans_mapper() output
+k_means_mapped_tbl <- centers_tbl %>%
+  mutate(k_means = map(centers, ~kmeans_mapper(.x)))
+
+# Add a column named glance with the glance() output
+k_means_mapped_tbl <- k_means_mapped_tbl %>%
+  mutate(glance = map(k_means, glance))
+
+# Unnest the glance column
+k_means_mapped_tbl <- k_means_mapped_tbl %>%
+  unnest(glance)
+
+# Visualize Scree Plot
+ggplot(k_means_mapped_tbl, aes(x = centers, y = tot.withinss)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Scree Plot") +
+  theme_minimal()
+
+
+# Step 5
+# Apply UMAP to stock_date_matrix_tbl
+umap_results <- stock_date_matrix_tbl %>%
+  select(-symbol) %>%
+  umap()
+
+# Store UMAP results
+umap_results_tbl <- umap_results$layout %>%
+  as_tibble() %>%
+  bind_cols(symbol = stock_date_matrix_tbl$symbol)
+
+# Visualize UMAP results
+umap_results_tbl %>%
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.5) +
+  theme_tq() +
+  labs(title = "UMAP Projection")
+
+
+
+# Step 6
+sp_500_index_tbl <- read_rds("../../scripts/data/sp_500_index_tbl.rds")
+k_means_mapped_tbl <- read_rds("../../scripts/data/k_means_mapped_tbl.rds")
+umap_results_tbl   <- read_rds("../../scripts/data/umap_results_tbl.rds")
+stock_date_matrix_tbl <- read_rds("../../scripts/data/stock_date_matrix_tbl.rds")
+
+# Get the k_means_obj from the 10th center
+k_means_obj <- k_means_mapped_tbl %>%
+  filter(centers == 10) %>%
+  pull(k_means) %>%
+  pluck(1)
+
+# Extract the cluster assignments from k_means_obj
+k_means_clusters <- k_means_obj$cluster
+
+# Augment the k_means_obj with the stock_date_matrix_tbl
+# Add the clusters to the data
+umap_kmeans_results_tbl <- broom::augment(k_means_obj, stock_date_matrix_tbl) %>%
+  select(symbol , .cluster) %>%
+  left_join(umap_results_tbl, by = "symbol") %>%
+  left_join(sp_500_index_tbl %>% select(symbol, company, sector), by = "symbol")
+
+
+# Plot the K-Means and UMAP results
+ggplot(umap_kmeans_results_tbl, aes(V1, V2, color = .cluster)) +
+  geom_point(alpha = 0.5) 
+#+ scale_color_manual(values = palette_light() %>% rep(3))
 ```
