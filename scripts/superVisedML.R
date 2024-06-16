@@ -607,11 +607,11 @@ g2 <- g1 +
 
 
 # Challenge
-
 # Load required libraries
 library(tidymodels)
 library(broom.mixed)
 library(ggplot2)
+library(dplyr)
 
 # Load the dataset
 bike_data_tbl <- readRDS("scripts/data/bike_orderlines.rds")
@@ -625,11 +625,21 @@ test_data <- testing(data_split)
 # Create the recipe (without prep)
 recipe_obj <- recipe(weight ~ price + category_1, data = train_data) %>% 
   step_dummy(all_nominal(), one_hot = TRUE) %>% 
+  step_zv(all_predictors()) %>% 
   step_corr(all_predictors(), threshold = 0.9)
+
+# Preprocess the training data
+prepared_train_data <- recipe_obj %>% 
+  prep() %>% 
+  juice()
 
 # Define the linear regression model
 lm_mod <- linear_reg() %>% 
   set_engine("lm")
+
+# Train the model
+lm_fit <- lm_mod %>% 
+  fit(weight ~ ., data = prepared_train_data)
 
 # Create a workflow
 bike_workflow <- workflow() %>% 
@@ -640,10 +650,67 @@ bike_workflow <- workflow() %>%
 bike_workflow_fit <- bike_workflow %>% 
   fit(data = train_data)
 
+# Load the function for evaluating the models
+evaluate_models <- function(models_tbl, new_data) {
+  # Make predictions for each model
+  predictions <- models_tbl %>%
+    mutate(predictions = map(model, predict, new_data = new_data)) %>%
+    unnest(predictions) %>%
+    mutate(category_2 = "Cross-Country") %>%
+    left_join(new_data, by = "category_2")
+  
+  # Update plot
+  g2 <- g1 +
+    geom_point(aes(y = .pred), color = "red", alpha = 0.5,
+               data = predictions) +
+    ggrepel::geom_text_repel(aes(label = model_id, y = .pred),
+                             size = 3,
+                             data = predictions)
+  
+  # Print the updated plot
+  print(g2)
+  
+  # Return the predictions
+  return(predictions)
+}
+
+# Define the new bike model
+new_cross_country <- tibble(
+  model = "Exceed AL SL new",
+  category_2 = "Cross-Country",
+  frame_material = "aluminium",
+  shimano_dura_ace = 0,
+  shimano_ultegra = 0,
+  shimano_105 = 0,
+  shimano_tiagra = 0,
+  Shimano_sora = 0,
+  shimano_deore = 0,
+  shimano_slx = 0,
+  shimano_grx = 0,
+  Shimano_xt = 1,
+  Shimano_xtr = 0,
+  Shimano_saint = 0,
+  SRAM_red = 0,
+  SRAM_force = 0,
+  SRAM_rival = 0,
+  SRAM_apex = 0,
+  SRAM_xx1 = 0,
+  SRAM_x01 = 0,
+  SRAM_gx = 0,
+  SRAM_nx = 0,
+  SRAM_sx = 0,
+  Campagnolo_potenza = 0,
+  Campagnolo_super_record = 0,
+  shimano_nexus = 0,
+  shimano_alfine = 0
+) 
+
+predict(lm_fit, new_data = new_cross_country)
+
 # Make predictions on the test set
 test_predictions <- bike_workflow_fit %>% 
-  predict(new_data = test_data) %>% 
-  bind_cols(test_data)
+  predict(new_data = new_cross_country) %>% 
+  bind_cols(new_cross_country)
 
 # Evaluate the model
 metrics <- test_predictions %>% 
