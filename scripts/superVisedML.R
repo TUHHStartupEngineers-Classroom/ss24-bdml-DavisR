@@ -606,115 +606,92 @@ g2 <- g1 +
                            data = predictions_new_cross_country_tbl)
 
 
-# Challenge
-# Load required libraries
-library(tidymodels)
-library(broom.mixed)
-library(ggplot2)
-library(dplyr)
 
-# Load the dataset
-bike_data_tbl <- readRDS("scripts/data/bike_orderlines.rds")
+
+
+
+
+
+
+
+
+# Challenge
+# Load the libraries
+library(tidyverse)
+library(recipes)
+library(workflows)
+library(parsnip)
+library(yardstick)
+library(rsample)
+
+# Read the data
+bike_features_tbl <- readRDS("scripts/data/bike_features_tbl.rds")
+bike_features_tbl <- bike_features_tbl %>% 
+  select(model:url, `Rear Derailleur`, `Shift Lever`) %>% 
+  mutate(
+    `shimano dura-ace`        = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano dura-ace ") %>% as.numeric(),
+    `shimano ultegra`         = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano ultegra ") %>% as.numeric(),
+    `shimano 105`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano 105 ") %>% as.numeric(),
+    `shimano tiagra`          = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano tiagra ") %>% as.numeric(),
+    `Shimano sora`            = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano sora") %>% as.numeric(),
+    `shimano deore`           = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano deore(?! xt)") %>% as.numeric(),
+    `shimano slx`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano slx") %>% as.numeric(),
+    `shimano grx`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano grx") %>% as.numeric(),
+    `Shimano xt`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano deore xt |shimano xt ") %>% as.numeric(),
+    `Shimano xtr`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano xtr") %>% as.numeric(),
+    `Shimano saint`           = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano saint") %>% as.numeric(),
+    `SRAM red`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram red") %>% as.numeric(),
+    `SRAM force`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram force") %>% as.numeric(),
+    `SRAM rival`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram rival") %>% as.numeric(),
+    `SRAM apex`               = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram apex") %>% as.numeric(),
+    `SRAM xx1`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram xx1") %>% as.numeric(),
+    `SRAM x01`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram x01|sram xo1") %>% as.numeric(),
+    `SRAM gx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram gx") %>% as.numeric(),
+    `SRAM nx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram nx") %>% as.numeric(),
+    `SRAM sx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram sx") %>% as.numeric(),
+    `SRAM sx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram sx") %>% as.numeric(),
+    `Campagnolo potenza`      = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo potenza") %>% as.numeric(),
+    `Campagnolo super record` = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo super record") %>% as.numeric(),
+    `shimano nexus`           = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano nexus") %>% as.numeric(),
+    `shimano alfine`          = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano alfine") %>% as.numeric()
+  ) %>% 
+  # Remove original columns  
+  select(-c(`Rear Derailleur`, `Shift Lever`)) %>% 
+  # Set all NAs to 0
+  mutate_if(is.numeric, ~replace(., is.na(.), 0))
 
 # Split the data into training and testing sets
-set.seed(123)
-data_split <- initial_split(bike_data_tbl, prop = 0.8)
-train_data <- training(data_split)
-test_data <- testing(data_split)
+set.seed(123)  # For reproducibility
+data_split <- initial_split(bike_features_tbl, prop = 3/4)
+train_tbl <- training(data_split)
+train_tbl$`Brake Rotor` <- unlist(train_tbl$`Brake Rotor`)
+test_tbl <- testing(data_split) 
 
-# Create the recipe (without prep)
-recipe_obj <- recipe(weight ~ price + category_1, data = train_data) %>% 
-  step_dummy(all_nominal(), one_hot = TRUE) %>% 
-  step_zv(all_predictors()) %>% 
-  step_corr(all_predictors(), threshold = 0.9)
 
-# Preprocess the training data
-prepared_train_data <- recipe_obj %>% 
-  prep() %>% 
-  juice()
-
-# Define the linear regression model
-lm_mod <- linear_reg() %>% 
+# Define the model
+linear_model <- linear_reg() %>%
   set_engine("lm")
 
-# Train the model
-lm_fit <- lm_mod %>% 
-  fit(weight ~ ., data = prepared_train_data)
+# Create the workflow with recipe steps directly
+workflow_obj <- workflow() %>%
+  add_formula(price ~ .) %>%
+  step_rm(url) %>%                 
+  step_unknown(all_nominal()) %>%  
+  step_dummy(all_nominal(), one_hot = TRUE) %>%
+  add_model(linear_model)
 
-# Create a workflow
-bike_workflow <- workflow() %>% 
-  add_model(lm_mod) %>% 
-  add_recipe(recipe_obj)
+# Fit the workflow
+fit_workflow <- workflow_obj %>%
+  fit(data = train_tbl)
 
-# Train the workflow
-bike_workflow_fit <- bike_workflow %>% 
-  fit(data = train_data)
+# Make predictions
+predictions <- predict(fit_workflow, new_data = test_tbl)
 
-# Load the function for evaluating the models
-evaluate_models <- function(models_tbl, new_data) {
-  # Make predictions for each model
-  predictions <- models_tbl %>%
-    mutate(predictions = map(model, predict, new_data = new_data)) %>%
-    unnest(predictions) %>%
-    mutate(category_2 = "Cross-Country") %>%
-    left_join(new_data, by = "category_2")
-  
-  # Update plot
-  g2 <- g1 +
-    geom_point(aes(y = .pred), color = "red", alpha = 0.5,
-               data = predictions) +
-    ggrepel::geom_text_repel(aes(label = model_id, y = .pred),
-                             size = 3,
-                             data = predictions)
-  
-  # Print the updated plot
-  print(g2)
-  
-  # Return the predictions
-  return(predictions)
-}
+# Calculate metrics
+#metrics <- yardstick::metrics(truth = test_tbl$price, estimate = test_tbl$.pred)
 
-# Define the new bike model
-new_cross_country <- tibble(
-  model = "Exceed AL SL new",
-  category_2 = "Cross-Country",
-  frame_material = "aluminium",
-  shimano_dura_ace = 0,
-  shimano_ultegra = 0,
-  shimano_105 = 0,
-  shimano_tiagra = 0,
-  Shimano_sora = 0,
-  shimano_deore = 0,
-  shimano_slx = 0,
-  shimano_grx = 0,
-  Shimano_xt = 1,
-  Shimano_xtr = 0,
-  Shimano_saint = 0,
-  SRAM_red = 0,
-  SRAM_force = 0,
-  SRAM_rival = 0,
-  SRAM_apex = 0,
-  SRAM_xx1 = 0,
-  SRAM_x01 = 0,
-  SRAM_gx = 0,
-  SRAM_nx = 0,
-  SRAM_sx = 0,
-  Campagnolo_potenza = 0,
-  Campagnolo_super_record = 0,
-  shimano_nexus = 0,
-  shimano_alfine = 0
-) 
-
-predict(lm_fit, new_data = new_cross_country)
-
-# Make predictions on the test set
-test_predictions <- bike_workflow_fit %>% 
-  predict(new_data = new_cross_country) %>% 
-  bind_cols(new_cross_country)
-
-# Evaluate the model
-metrics <- test_predictions %>% 
-  metrics(truth = weight, estimate = .pred)
+predictions %>% bind_cols(test_tbl %>% select(price)) %>%
+  yardstick::metrics(truth = price, estimate = .pred)
 
 # Print the metrics
 print(metrics)

@@ -684,8 +684,15 @@ automl_models_h2o@leaderboard %>%
 
 
 # Challenge
-# Functions
+# Load necessary libraries
+library(tidyverse)
+library(readr)
+library(rsample)
+library(h2o)
+library(cowplot)
+library(glue)
 
+# Functions
 theme_new <- theme(
   legend.position  = "bottom",
   legend.key       = element_blank(),,
@@ -868,13 +875,6 @@ plot_h2o_performance <- function(h2o_leaderboard, newdata, order_by = c("auc", "
   return(ret)
 }
   
-# Load necessary libraries
-library(tidyverse)
-library(readr)
-library(rsample)
-library(h2o)
-library(cowplot)
-library(glue)
 
 # Load the data
 product_backorders_tbl <- read_csv("scripts/data/product_backorders.csv")
@@ -931,16 +931,21 @@ hyper_params <- list(
   epochs = c(10, 20, 30)
 )
 
+
 # Perform grid search
 deeplearning_grid <- h2o.grid(
   algorithm = "deeplearning",
-  grid_id = "deeplearning_grid",
+  grid_id = "deeplearning_grid_2",
   x = x,
   y = y,
   training_frame = train_h2o,
   #validation_frame = valid_h2o,
-  hyper_params = hyper_params,
-  seed = 1234
+  nfolds = 5,
+  hyper_params = list(
+    # Use some combinations (the first one was the original)
+    hidden = list(c(10, 10, 10), c(50, 20, 10), c(20, 20, 20)),
+    epochs = c(10, 50, 100)
+  )
 )
 
 # Get the best model from grid search
