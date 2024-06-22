@@ -146,7 +146,7 @@ library(recipes)
 # Processing pipeline
 # If we had our raw data already split into train and test data
 train_readable_tbl <- process_hr_data_readable(employee_attrition_tbl, definitions_raw_tbl)
-test_readable_tbl   <- process_hr_data_readable(test_raw_tbl, definitions_raw_tbl)
+test_readable_tbl   <- process_hr_data_readable(employee_attrition_tbl, definitions_raw_tbl)
 
 employee_attrition_readable_tbl <- process_hr_data_readable(employee_attrition_tbl, definitions_raw_tbl)
 
@@ -471,8 +471,8 @@ train_tbl %>%
 # H2O modeling
 library(h2o)
 
-employee_attrition_tbl          <- read_csv("datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv")
-definitions_raw_tbl             <- read_excel("data_definitions.xlsx", sheet = 1, col_names = FALSE)
+employee_attrition_tbl          <- read_csv("scripts/data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv")
+definitions_raw_tbl             <- read_excel("scripts/data/data_definitions.xlsx", sheet = 1, col_names = FALSE)
 employee_attrition_readable_tbl <- process_hr_data_readable(employee_attrition_tbl, definitions_raw_tbl)
 set.seed(seed = 1113)
 split_obj                       <- rsample::initial_split(employee_attrition_readable_tbl, prop = 0.85)
@@ -522,7 +522,7 @@ automl_models_h2o@leaderboard
 automl_models_h2o@leader
 
 # Depending on the algorithm, the output will be different
-h2o.getModel("DeepLearning_grid__1_AutoML_20200820_190823_model_1")
+h2o.getModel("DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
 
 # Extracts and H2O model name by a position so can more easily use h2o.getModel()
 extract_h2o_model_name_by_position <- function(h2o_leaderboard, n = 1, verbose = T) {
@@ -542,13 +542,13 @@ automl_models_h2o@leaderboard %>%
   extract_h2o_model_name_by_position(6) %>% 
   h2o.getModel()
 
-h2o.getModel("DeepLearning_grid__1_AutoML_20200820_190823_model_1") %>% 
-  h2o.saveModel(path = "04_Modeling/h20_models/")
+h2o.getModel("DeepLearning_grid_1_AutoML_1_20240622_153440_model_1") %>% 
+  h2o.saveModel(path = "scripts/data/h2o_models/")
 
-h2o.loadModel("04_Modeling/h20_models/DeepLearning_grid__1_AutoML_20200820_190823_model_1")
+h2o.loadModel("scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
 
 # Choose whatever model you want
-stacked_ensemble_h2o <- h2o.loadModel("04_Modeling/h20_models/StackedEnsemble_BestOfFamily_AutoML_20200820_190823")
+stacked_ensemble_h2o <- h2o.loadModel("scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
 stacked_ensemble_h2o
 
 predictions <- h2o.predict(stacked_ensemble_h2o, newdata = as.h2o(test_tbl))
@@ -557,7 +557,7 @@ typeof(predictions)
 ## [1] "environment"
 
 predictions_tbl <- predictions %>% as_tibble()
-deep_learning_h2o <- h2o.loadModel("04_Modeling/h20_models/DeepLearning_grid__1_AutoML_20200820_190823_model_1")
+deep_learning_h2o <- h2o.loadModel("scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
 
 # To see all possible parameters
 ?h2o.deeplearning

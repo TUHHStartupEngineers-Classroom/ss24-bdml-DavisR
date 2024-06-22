@@ -949,5 +949,6 @@ deeplearning_grid <- h2o.grid(
 )
 
 # Get the best model from grid search
-best_model <- h2o.getModel(deeplearning_grid@model_ids[[1]])
+best_model <- h2o.getModel(deeplearning_grid@model_ids[[1]]) %>%
+  h2o.saveModel(path = "scripts/data/h2o_models/")
 
