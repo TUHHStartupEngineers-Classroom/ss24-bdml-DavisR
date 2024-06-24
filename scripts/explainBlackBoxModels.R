@@ -63,7 +63,7 @@ test_tbl  <- bake(recipe_obj, new_data = test_readable_tbl)
 
 h2o.init()
 
-automl_leader <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_BestOfFamily_4_AutoML_4_20240617_131246")
+automl_leader <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_AllModels_4_AutoML_1_20240624_163359")
 automl_leader
 
 # Convert data frames to H2O frames
@@ -75,6 +75,8 @@ test_h2o <- as.h2o(test_tbl)
 # 3.1 Making Predictions ----
 
 # Making Predictions
+pred <- h2o.predict(automl_leader, newdata = train_h2o)
+
 predictions_tbl <- automl_leader %>% 
   h2o.predict(newdata = as.h2o(test_tbl)) %>%
   as.tibble() %>%

@@ -75,7 +75,7 @@ ggplot(bayes_plot_data, aes(x = category_1)) +
 
 
 set.seed(123)
-
+library(nycflights13)
 flight_data <- 
   flights %>% 
   mutate(
@@ -261,9 +261,7 @@ test_tbl  <- test_tbl  %>% set_names(str_replace_all(names(test_tbl),  " |-", "_
 # 3.1 LINEAR REGRESSION - NO ENGINEERED FEATURES ----
 
 # 3.1.1 Model ----
-?lm # from the stats package
-?set_engine
-?fit # then click Estimate model parameters and then fit at the bottom
+
 
 model_01_linear_lm_simple <- linear_reg(mode = "regression") %>%
   set_engine("lm") %>%
@@ -275,7 +273,6 @@ model_01_linear_lm_simple %>%
 
 model_01_linear_lm_simple %>%
   predict(new_data = test_tbl) %>%
-  
   bind_cols(test_tbl %>% select(price)) %>%
   
   # Manual approach
@@ -423,8 +420,6 @@ show.prp.palettes()
 # 4.2 RANDOM FOREST ----
 
 # 4.2.1 Model: ranger ----
-?rand_forest()
-
 
 library(ranger)
 
@@ -453,8 +448,6 @@ model_05_rand_forest_ranger$fit %>%
   labs(title = "ranger: Variable Importance",
        subtitle = "Model 05: Ranger Random Forest Model")
 # 4.2.3 Model randomForest ----
-?rand_forest()
-?randomForest::randomForest
 
 set.seed(1234)
 model_06_rand_forest_randomForest <- rand_forest("regression") %>%
@@ -565,7 +558,7 @@ new_cross_country
 
 # Linear Methods ----
   # Doesn't work right now
-  predict(model_01_linear_lm_simple,, new_data = new_cross_country)
+  predict(model_01_linear_lm_simple, new_data = new_cross_country)
 
 # Tree-Based Methods ----
 
@@ -626,8 +619,8 @@ library(rsample)
 
 # Read the data
 bike_features_tbl <- readRDS("scripts/data/bike_features_tbl.rds")
-bike_features_tbl <- bike_features_tbl %>% 
-  select(model:url, `Rear Derailleur`, `Shift Lever`) %>% 
+bike_features_tbl <- bike_features_tbl %>%
+  select(model:url, `Rear Derailleur`, `Shift Lever`) %>%
   mutate(
     `shimano dura-ace`        = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano dura-ace ") %>% as.numeric(),
     `shimano ultegra`         = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano ultegra ") %>% as.numeric(),
@@ -654,15 +647,15 @@ bike_features_tbl <- bike_features_tbl %>%
     `Campagnolo super record` = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo super record") %>% as.numeric(),
     `shimano nexus`           = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano nexus") %>% as.numeric(),
     `shimano alfine`          = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano alfine") %>% as.numeric()
-  ) %>% 
-  # Remove original columns  
-  select(-c(`Rear Derailleur`, `Shift Lever`)) %>% 
+  ) %>%
+  # Remove original columns
+  select(-c(`Rear Derailleur`, `Shift Lever`, `url`)) %>%
   # Set all NAs to 0
   mutate_if(is.numeric, ~replace(., is.na(.), 0))
 
 # Split the data into training and testing sets
 set.seed(123)  # For reproducibility
-data_split <- initial_split(bike_features_tbl, prop = 3/4)
+data_split <- initial_split(bike_features_tbl, prop = 0.9)
 train_tbl <- training(data_split)
 train_tbl$`Brake Rotor` <- unlist(train_tbl$`Brake Rotor`)
 test_tbl <- testing(data_split) 
@@ -672,26 +665,47 @@ test_tbl <- testing(data_split)
 linear_model <- linear_reg() %>%
   set_engine("lm")
 
+recipe_obj <- recipe(price ~ ., data = train_tbl) %>% 
+  step_rm(id, url, category_1, category_3, gender, weight) %>%
+  step_dummy(all_nominal(), - all_outcomes()) %>%
+  prep()
+
 # Create the workflow with recipe steps directly
+# workflow_obj <- workflow() %>%
+#   add_formula(price ~ .) %>%
+#   step_rm(url) %>%                 
+#   step_unknown(all_nominal()) %>%  
+#   step_dummy(all_nominal(), one_hot = TRUE) %>%
+#   add_model(linear_model)
 workflow_obj <- workflow() %>%
-  add_formula(price ~ .) %>%
-  step_rm(url) %>%                 
-  step_unknown(all_nominal()) %>%  
-  step_dummy(all_nominal(), one_hot = TRUE) %>%
+  add_recipe(recipe_obj) %>%
   add_model(linear_model)
+
+
+train_transformed_tbl <- bake(recipe_obj, new_data = train_tbl)
+test_transformed_tbl <- bake(recipe_obj, new_data = test_tbl)
 
 # Fit the workflow
 fit_workflow <- workflow_obj %>%
-  fit(data = train_tbl)
+  fit(data = train_transformed_tbl)
+
+
 
 # Make predictions
+model_01_linear_lm_simple <- linear_reg(mode = "regression") %>%
+  set_engine("lm") %>%
+  fit(price ~ category_2 + frame_material, data = train_transformed_tbl)
+predictions <- predict(model_01_linear_lm_simple, new_data = test_transformed_tbl)
+
+# Make predictions using the fitted workflow
 predictions <- predict(fit_workflow, new_data = test_tbl)
 
 # Calculate metrics
-#metrics <- yardstick::metrics(truth = test_tbl$price, estimate = test_tbl$.pred)
-
-predictions %>% bind_cols(test_tbl %>% select(price)) %>%
+metrics <- predictions %>% 
+  bind_cols(test_transformed_tbl %>% select(price)) %>%
   yardstick::metrics(truth = price, estimate = .pred)
+
 
 # Print the metrics
 print(metrics)
+

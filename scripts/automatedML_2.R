@@ -519,10 +519,19 @@ slotNames(automl_models_h2o)
 ## [1] "project_name"   "leader"         "leaderboard"    "event_log"      "modeling_steps" "training_info" 
 
 automl_models_h2o@leaderboard
+wiwowiwo <- as.data.frame(automl_models_h2o@leaderboard)
 automl_models_h2o@leader
 
+h2o.getModel("StackedEnsemble_AllModels_4_AutoML_2_20240624_114430") %>% 
+  h2o.saveModel(path = "scripts/data/h2o_models/")
+h2o.getModel("DeepLearning_grid_1_AutoML_2_20240624_114430_model_3") %>% 
+  h2o.saveModel(path = "scripts/data/h2o_models/")
+h2o.getModel("GBM_grid_1_AutoML_2_20240624_114430_model_47") %>% 
+  h2o.saveModel(path = "scripts/data/h2o_models/")
+
+
 # Depending on the algorithm, the output will be different
-h2o.getModel("DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
+h2o.getModel("DeepLearning_grid_1_AutoML_2_20240624_114430_model_3")
 
 # Extracts and H2O model name by a position so can more easily use h2o.getModel()
 extract_h2o_model_name_by_position <- function(h2o_leaderboard, n = 1, verbose = T) {
@@ -570,6 +579,11 @@ deep_learning_h2o@allparameters
 
 
 
+
+
+
+
+
 # Challenge
 # Load necessary libraries
 library(tidyverse)
@@ -600,7 +614,7 @@ train_tbl <- training(split_obj)
 test_tbl <- testing(split_obj)
 
 # Initialize H2O
-h2o.init(max_mem_size = "4G")
+h2o.init()
 
 # Convert data frames to H2O objects
 train_h2o <- as.h2o(train_tbl)

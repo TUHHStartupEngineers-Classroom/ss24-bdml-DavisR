@@ -27,7 +27,7 @@ train_tbl <- training(split_obj)
 test_tbl <- testing(split_obj)
 
 # Initialize H2O
-h2o.init(max_mem_size = "4G")
+h2o.init()
 
 # Convert data frames to H2O objects
 train_h2o <- as.h2o(train_tbl)
@@ -80,6 +80,7 @@ predictions <- h2o.predict(leader_model, newdata = test_h2o)
 # Convert predictions to a data frame
 predictions_tbl <- as_tibble(predictions)
 print(predictions_tbl)
+
 data_transformed_tbl %>%
   ggplot(aes(value, model_id, color = model_type)) +
   geom_point(size = 3) +
@@ -156,7 +157,7 @@ plot_h2o_leaderboard <- function(h2o_leaderboard, order_by = c("auc", "logloss")
   
 }
 
-deeplearning_h2o <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_BestOfFamily_4_AutoML_4_20240617_131246")
+deeplearning_h2o <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_AllModels_4_AutoML_2_20240624_114430")
 
 # Take a look for the metrics on the training data set
 # For my model the total error in the confusion matrix is ~15 %
@@ -168,6 +169,7 @@ test_tbl
 # Make sure to convert it to an h20 object
 # Accuracy of the confusion matrix shows ~85 % accuracy
 h2o.performance(deeplearning_h2o, newdata = as.h2o(test_tbl))
+
 
 deeplearning_grid_01 <- h2o.grid(
   
@@ -194,7 +196,6 @@ deeplearning_grid_01 <- h2o.grid(
     epochs = c(10, 50, 100)
   )
 )
-
 deeplearning_grid_01
 
 h2o.getGrid(grid_id = "deeplearning_grid_01", sort_by = "auc", decreasing = TRUE)
@@ -211,10 +212,21 @@ deeplearning_grid_01_model_1 %>% h2o.auc(train = T, valid = T, xval = T)
 deeplearning_grid_01_model_1 %>%
   h2o.performance(newdata = as.h2o(test_tbl))
 
+automl_models_h2o@leaderboard %>% 
+  as_tibble() %>% 
+  select(-c(mean_per_class_error, rmse, mse))
+
+#h2o.getModel("StackedEnsemble_AllModels_4_AutoML_2_20240624_114430") %>% 
+#  h2o.saveModel(path = "scripts/data/h2o_models/")
+#h2o.getModel("DeepLearning_grid_1_AutoML_2_20240624_114430_model_3") %>% 
+#  h2o.saveModel(path = "scripts/data/h2o_models/")
+#h2o.getModel("GBM_grid_1_AutoML_2_20240624_114430_model_47") %>% 
+#  h2o.saveModel(path = "scripts/data/h2o_models/")
+
 # 4. Assessing Performance ----
-stacked_ensemble_h2o <- h2o.loadModel("04_Modeling/h2o_models/StackedEnsemble_AllModels_AutoML_20200826_112031")
-deeplearning_h2o     <- h2o.loadModel("04_Modeling/h2o_models/DeepLearning_grid__1_AutoML_20200826_112031_model_1")
-glm_h2o              <- h2o.loadModel("04_Modeling/h2o_models/GLM_1_AutoML_20200826_112031")
+stacked_ensemble_h2o <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_AllModels_4_AutoML_2_20240624_114430")
+deeplearning_h2o     <- h2o.loadModel("scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
+glm_h2o              <- h2o.loadModel("scripts/data/h2o_models/GBM_grid_1_AutoML_2_20240624_114430_model_47")
 
 performance_h2o <- h2o.performance(stacked_ensemble_h2o, newdata = as.h2o(test_tbl))
 
@@ -257,6 +269,9 @@ performance_tbl <- performance_h2o %>%
   h2o.metric() %>%
   as.tibble() 
 
+performance_tbl %>% 
+  glimpse()
+
 theme_new <- theme(
   legend.position  = "bottom",
   legend.key       = element_blank(),,
@@ -280,13 +295,14 @@ performance_tbl %>%
 
 # ROC Plot
 
-path <- "04_Modeling/h2o_models/StackedEnsemble_AllModels_AutoML_20200826_112031"
+path <- "scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1"
 
 load_model_performance_metrics <- function(path, test_tbl) {
-  
   model_h2o <- h2o.loadModel(path)
+  response_column <- model_h2o@parameters$y
+  print(response_column)
   perf_h2o  <- h2o.performance(model_h2o, newdata = as.h2o(test_tbl)) 
-  
+    
   perf_h2o %>%
     h2o.metric() %>%
     as_tibble() %>%
@@ -295,7 +311,13 @@ load_model_performance_metrics <- function(path, test_tbl) {
   
 }
 
-model_metrics_tbl <- fs::dir_info(path = "04_Modeling/h2o_models/") %>%
+
+# Retrieve the response column name from the model
+response_column <- model_h2o <- h2o.loadModel(path)@parameters$y
+print(response_column)
+
+
+model_metrics_tbl <- fs::dir_info(path = "scripts/data/h2o_models/") %>%
   select(path) %>%
   mutate(metrics = map(path, load_model_performance_metrics, test_tbl)) %>%
   unnest(cols = metrics)
@@ -336,7 +358,7 @@ load_model_performance_metrics <- function(path, test_tbl) {
   
 }
 
-model_metrics_tbl <- fs::dir_info(path = "04_Modeling/h2o_models/") %>%
+model_metrics_tbl <- fs::dir_info(path = "scripts/data/h2o_models/") %>%
   select(path) %>%
   mutate(metrics = map(path, load_model_performance_metrics, test_tbl)) %>%
   unnest(cols = metrics)
@@ -358,10 +380,12 @@ model_metrics_tbl %>%
   )
 
 # Gain & Lift
+#colnames(predictions_tbl) <- c("predict", "No", "Yes")
 
 ranked_predictions_tbl <- predictions_tbl %>%
   bind_cols(test_tbl) %>%
-  select(predict:Yes, Attrition) %>%
+  select(predict:Yes, went_on_backorder) %>%
+  rename(Attrition = went_on_backorder) %>%
   # Sorting from highest to lowest class probability
   arrange(desc(Yes))
 ## # A tibble: 220 x 4
@@ -683,6 +707,54 @@ automl_models_h2o@leaderboard %>%
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Challenge
 # Load necessary libraries
 library(tidyverse)
@@ -918,7 +990,36 @@ automl_models_h2o <- h2o.automl(
 leaderboard <- automl_models_h2o@leaderboard
 print(leaderboard)
 
+data_transformed_tbl <- automl_models_h2o@leaderboard %>%
+  as_tibble() %>%
+  select(-c(aucpr, mean_per_class_error, rmse, mse)) %>% 
+  mutate(model_type = str_extract(model_id, "[^_]+")) %>%
+  slice(1:15) %>% 
+  rownames_to_column(var = "rowname") %>%
+  # Visually this step will not change anything
+  # It reorders the factors under the hood
+  mutate(
+    model_id   = as_factor(model_id) %>% reorder(auc),
+    model_type = as.factor(model_type)
+  ) %>% 
+  pivot_longer(cols = -c(model_id, model_type, rowname), 
+               names_to = "key", 
+               values_to = "value", 
+               names_transform = list(key = forcats::fct_inorder)
+  ) %>% 
+  mutate(model_id = paste0(rowname, ". ", model_id) %>% as_factor() %>% fct_rev())
 
+data_transformed_tbl %>%
+  ggplot(aes(value, model_id, color = model_type)) +
+  geom_point(size = 3) +
+  geom_label(aes(label = round(value, 2), hjust = "inward")) +
+  
+  # Facet to break out logloss and auc
+  facet_wrap(~ key, scales = "free_x") +
+  labs(title = "Leaderboard Metrics",
+       subtitle = paste0("Ordered by: ", "auc"),
+       y = "Model Postion, Model ID", x = "") + 
+  theme(legend.position = "bottom")
 
 # Visualize the leaderboard
 plot_h2o_performance(automl_models_h2o@leaderboard, newdata = test_tbl, order_by = "logloss", max_models = 5)

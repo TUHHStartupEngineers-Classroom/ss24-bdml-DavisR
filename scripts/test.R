@@ -1,112 +1,86 @@
-# Load Libraries 
-library(h2o)
-library(recipes)
-library(readxl)
+# Challenge
+# Load the libraries
 library(tidyverse)
-library(lime)
+library(recipes)
+library(workflows)
+library(parsnip)
+library(yardstick)
 library(rsample)
 
-# Load Data
-employee_attrition_tbl <- read_csv("scripts/data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv")
-definitions_raw_tbl <- read_excel("scripts/data/data_definitions.xlsx", sheet = 1, col_names = FALSE)
+# Read the data
+bike_features_tbl <- readRDS("scripts/data/bike_features_tbl.rds")
+bike_features_tbl <- bike_features_tbl %>%
+  select(model:url, `Rear Derailleur`, `Shift Lever`) %>%
+mutate(
+  `shimano dura-ace`        = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano dura-ace ") %>% as.numeric(),
+  `shimano ultegra`         = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano ultegra ") %>% as.numeric(),
+  `shimano 105`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano 105 ") %>% as.numeric(),
+  `shimano tiagra`          = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano tiagra ") %>% as.numeric(),
+  `Shimano sora`            = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano sora") %>% as.numeric(),
+  `shimano deore`           = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano deore(?! xt)") %>% as.numeric(),
+  `shimano slx`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano slx") %>% as.numeric(),
+  `shimano grx`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano grx") %>% as.numeric(),
+  `Shimano xt`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano deore xt |shimano xt ") %>% as.numeric(),
+  `Shimano xtr`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano xtr") %>% as.numeric(),
+  `Shimano saint`           = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano saint") %>% as.numeric(),
+  `SRAM red`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram red") %>% as.numeric(),
+  `SRAM force`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram force") %>% as.numeric(),
+  `SRAM rival`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram rival") %>% as.numeric(),
+  `SRAM apex`               = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram apex") %>% as.numeric(),
+  `SRAM xx1`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram xx1") %>% as.numeric(),
+  `SRAM x01`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram x01|sram xo1") %>% as.numeric(),
+  `SRAM gx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram gx") %>% as.numeric(),
+  `SRAM nx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram nx") %>% as.numeric(),
+  `SRAM sx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram sx") %>% as.numeric(),
+  `SRAM sx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram sx") %>% as.numeric(),
+  `Campagnolo potenza`      = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo potenza") %>% as.numeric(),
+  `Campagnolo super record` = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo super record") %>% as.numeric(),
+  `shimano nexus`           = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano nexus") %>% as.numeric(),
+  `shimano alfine`          = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano alfine") %>% as.numeric()
+) %>%
+  # Remove original columns
+  select(-c(`Rear Derailleur`, `Shift Lever`, `url`)) %>%
+  # Set all NAs to 0
+  mutate_if(is.numeric, ~replace(., is.na(.), 0))
 
-# Processing Pipeline (assuming this file includes your process_hr_data_readable function)
-source("scripts/data/data_processing_pipeline.R")
+# Split the data into training and testing sets
+set.seed(1123)  # For reproducibility
+data_split <- initial_split(bike_features_tbl, prop = 0.9)
+train_tbl <- training(data_split)
+train_tbl$`Brake Rotor` <- unlist(train_tbl$`Brake Rotor`)
+test_tbl <- testing(data_split) 
+test_tbl$`Brake Rotor` <- unlist(test_tbl$`Brake Rotor`)
 
-# Process data and split into test and train
-set.seed(seed = 1113)
-employee_attrition_readable_tbl <- process_hr_data_readable(employee_attrition_tbl, definitions_raw_tbl)
-split_obj <- rsample::initial_split(employee_attrition_readable_tbl, prop = 0.7)
-train_readable_tbl <- training(split_obj)
-test_readable_tbl <- testing(split_obj)
 
-# Align levels of factor columns in test set with the training set
-align_levels <- function(train, test) {
-  for (col in colnames(train)) {
-    if (is.factor(train[[col]]) && is.factor(test[[col]])) {
-      levels_to_use <- levels(train[[col]])
-      test[[col]] <- factor(test[[col]], levels = levels_to_use)
-    }
-  }
-  return(test)
-}
+# Define the model
+linear_model <- linear_reg() %>%
+  set_engine("lm")
 
-test_readable_tbl <- align_levels(train_readable_tbl, test_readable_tbl)
+recipe_obj <- recipe(price ~ ., data = train_tbl) %>% 
+  step_rm(category_1, category_3, gender, weight) %>%
+  step_dummy(all_nominal(), -all_outcomes()) 
 
-# ML Preprocessing Recipe 
-recipe_obj <- recipe(Attrition ~ ., data = train_readable_tbl) %>%
-  step_zv(all_predictors()) %>%
-  step_mutate_at(c("JobLevel", "StockOptionLevel"), fn = as.factor) %>% 
-  prep()
 
-# Apply recipe to train and test sets
-train_tbl <- bake(recipe_obj, new_data = train_readable_tbl)
-test_tbl <- bake(recipe_obj, new_data = test_readable_tbl)
+# Create the workflow with recipe steps directly
+workflow_obj <- workflow() %>%
+  add_recipe(recipe_obj) %>%
+  add_model(linear_model)
 
-# Initialize H2O
-h2o.init()
 
-# Load pre-trained model
-automl_leader <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_BestOfFamily_4_AutoML_4_20240617_131246")
+# Fit the workflow
+fit_workflow <- workflow_obj %>%
+  fit(data = train_tbl)
 
-# Convert data frames to H2O frames
-train_h2o <- as.h2o(train_tbl)
-test_h2o <- as.h2o(test_tbl)
 
-# 3. LIME ----
+# Make predictions using the fitted workflow
+predictions <- predict(fit_workflow, new_data = test_tbl)
 
-# 3.1 Making Predictions ----
+# Calculate metrics
+metrics <- predictions %>% 
+  bind_cols(test_tbl %>% select(price)) %>%
+  yardstick::metrics(truth = price, estimate = .pred)
 
-# Making Predictions with probabilities
-predictions_tbl <- automl_leader %>% 
-  h2o.predict(newdata = test_h2o) %>%
-  as.tibble() %>%
-  bind_cols(
-    test_tbl %>%
-      select(Attrition, EmployeeNumber)
-  )
 
-predictions_tbl
-
-# 3.2 Single Explanation ----
-
-# Explain prediction for a single observation
-explanation <- test_tbl %>%
-  slice(1) %>%
-  select(-Attrition) %>%
-  lime::explain(
-    explainer = lime::lime(model = automl_leader),
-    n_labels = 1,
-    n_features = 8,
-    n_permutations = 5000,
-    kernel_width = 1
-  )
-
-explanation
-
-explanation %>%
-  as.tibble() %>%
-  select(feature:prediction) 
-
-g <- plot_features(explanation = explanation, ncol = 1)
-
-# 3.3 Multiple Explanations ----
-
-explanation <- test_tbl %>%
-  slice(1:20) %>%
-  select(-Attrition) %>%
-  lime::explain(
-    explainer = explainer,
-    n_labels   = 1,
-    n_features = 8,
-    n_permutations = 5000,
-    kernel_width   = 0.5
-  )
-
-explanation %>%
-  as.tibble()
-
-plot_features(explanation, ncol = 4)
-
-plot_explanations(explanation)
+# Print the metrics
+print(metrics)
 
