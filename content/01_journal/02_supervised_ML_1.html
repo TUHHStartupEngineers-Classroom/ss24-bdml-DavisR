@@ -64,6 +64,8 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 </head>
 
@@ -144,7 +146,21 @@ ul.task-list li input[type="checkbox"] {
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul class="collapse">
+  <li><a href="#load-the-libraries" id="toc-load-the-libraries" class="nav-link active" data-scroll-target="#load-the-libraries"><span class="header-section-number">1</span> Load the libraries</a></li>
+  <li><a href="#read-the-data" id="toc-read-the-data" class="nav-link" data-scroll-target="#read-the-data"><span class="header-section-number">2</span> Read the data</a></li>
+  <li><a href="#split-the-data-into-training-and-testing-sets" id="toc-split-the-data-into-training-and-testing-sets" class="nav-link" data-scroll-target="#split-the-data-into-training-and-testing-sets"><span class="header-section-number">3</span> Split the data into training and testing sets</a></li>
+  <li><a href="#define-the-model" id="toc-define-the-model" class="nav-link" data-scroll-target="#define-the-model"><span class="header-section-number">4</span> Define the model</a></li>
+  <li><a href="#create-the-workflow-with-recipe-steps-directly" id="toc-create-the-workflow-with-recipe-steps-directly" class="nav-link" data-scroll-target="#create-the-workflow-with-recipe-steps-directly"><span class="header-section-number">5</span> Create the workflow with recipe steps directly</a></li>
+  <li><a href="#fit-the-workflow" id="toc-fit-the-workflow" class="nav-link" data-scroll-target="#fit-the-workflow"><span class="header-section-number">6</span> Fit the workflow</a></li>
+  <li><a href="#make-predictions-using-the-fitted-workflow" id="toc-make-predictions-using-the-fitted-workflow" class="nav-link" data-scroll-target="#make-predictions-using-the-fitted-workflow"><span class="header-section-number">7</span> Make predictions using the fitted workflow</a></li>
+  <li><a href="#calculate-metrics" id="toc-calculate-metrics" class="nav-link" data-scroll-target="#calculate-metrics"><span class="header-section-number">8</span> Calculate metrics</a></li>
+  <li><a href="#print-the-metrics" id="toc-print-the-metrics" class="nav-link" data-scroll-target="#print-the-metrics"><span class="header-section-number">9</span> Print the metrics</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -172,8 +188,45 @@ ul.task-list li input[type="checkbox"] {
 
 </header>
 
+<section id="load-the-libraries" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Load the libraries</h1>
+<p>library(tidyverse) library(recipes) library(workflows) library(parsnip) library(yardstick) library(rsample)</p>
+</section>
+<section id="read-the-data" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Read the data</h1>
+<p>bike_features_tbl &lt;- readRDS(“scripts/data/bike_features_tbl.rds”) bike_features_tbl &lt;- bike_features_tbl %&gt;% select(model:url, <code>Rear Derailleur</code>, <code>Shift Lever</code>) %&gt;% mutate( <code>shimano dura-ace</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano dura-ace”) %&gt;% as.numeric(), <code>shimano ultegra</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano ultegra”) %&gt;% as.numeric(), <code>shimano 105</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano 105”) %&gt;% as.numeric(), <code>shimano tiagra</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano tiagra”) %&gt;% as.numeric(), <code>Shimano sora</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano sora”) %&gt;% as.numeric(), <code>shimano deore</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano deore(?! xt)”) %&gt;% as.numeric(), <code>shimano slx</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano slx”) %&gt;% as.numeric(), <code>shimano grx</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano grx”) %&gt;% as.numeric(), <code>Shimano xt</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano deore xt |shimano xt”) %&gt;% as.numeric(), <code>Shimano xtr</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano xtr”) %&gt;% as.numeric(), <code>Shimano saint</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano saint”) %&gt;% as.numeric(), <code>SRAM red</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram red”) %&gt;% as.numeric(), <code>SRAM force</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram force”) %&gt;% as.numeric(), <code>SRAM rival</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram rival”) %&gt;% as.numeric(), <code>SRAM apex</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram apex”) %&gt;% as.numeric(), <code>SRAM xx1</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram xx1”) %&gt;% as.numeric(), <code>SRAM x01</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram x01|sram xo1”) %&gt;% as.numeric(), <code>SRAM gx</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram gx”) %&gt;% as.numeric(), <code>SRAM nx</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram nx”) %&gt;% as.numeric(), <code>SRAM sx</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram sx”) %&gt;% as.numeric(), <code>SRAM sx</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“sram sx”) %&gt;% as.numeric(), <code>Campagnolo potenza</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“campagnolo potenza”) %&gt;% as.numeric(), <code>Campagnolo super record</code> = <code>Rear Derailleur</code> %&gt;% str_to_lower() %&gt;% str_detect(“campagnolo super record”) %&gt;% as.numeric(), <code>shimano nexus</code> = <code>Shift Lever</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano nexus”) %&gt;% as.numeric(), <code>shimano alfine</code> = <code>Shift Lever</code> %&gt;% str_to_lower() %&gt;% str_detect(“shimano alfine”) %&gt;% as.numeric() ) %&gt;% # Remove original columns select(-c(<code>Rear Derailleur</code>, <code>Shift Lever</code>, <code>url</code>)) %&gt;% # Set all NAs to 0 mutate_if(is.numeric, ~replace(., is.na(.), 0))</p>
+</section>
+<section id="split-the-data-into-training-and-testing-sets" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Split the data into training and testing sets</h1>
+<p>set.seed(1123) # For reproducibility data_split &lt;- initial_split(bike_features_tbl, prop = 0.9) train_tbl &lt;- training(data_split) train_tbl<span class="math inline">\(`Brake Rotor` &lt;- unlist(train_tbl\)</span><code>Brake Rotor</code>) test_tbl &lt;- testing(data_split) test_tbl<span class="math inline">\(`Brake Rotor` &lt;- unlist(test_tbl\)</span><code>Brake Rotor</code>)</p>
+</section>
+<section id="define-the-model" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Define the model</h1>
+<p>linear_model &lt;- linear_reg() %&gt;% set_engine(“lm”)</p>
+<p>recipe_obj &lt;- recipe(price ~ ., data = train_tbl) %&gt;% step_rm(category_1, category_3, gender, weight) %&gt;% step_dummy(all_nominal(), -all_outcomes())</p>
+</section>
+<section id="create-the-workflow-with-recipe-steps-directly" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Create the workflow with recipe steps directly</h1>
+<p>workflow_obj &lt;- workflow() %&gt;% add_recipe(recipe_obj) %&gt;% add_model(linear_model)</p>
+</section>
+<section id="fit-the-workflow" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Fit the workflow</h1>
+<p>fit_workflow &lt;- workflow_obj %&gt;% fit(data = train_tbl)</p>
+</section>
+<section id="make-predictions-using-the-fitted-workflow" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Make predictions using the fitted workflow</h1>
+<p>predictions &lt;- predict(fit_workflow, new_data = test_tbl)</p>
+</section>
+<section id="calculate-metrics" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Calculate metrics</h1>
+<p>metrics &lt;- predictions %&gt;% bind_cols(test_tbl %&gt;% select(price)) %&gt;% yardstick::metrics(truth = price, estimate = .pred)</p>
+</section>
+<section id="print-the-metrics" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Print the metrics</h1>
+<p>print(metrics)</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
