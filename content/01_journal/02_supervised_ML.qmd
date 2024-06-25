@@ -1,0 +1,90 @@
+---
+title: "Challenge 1 Machine Learning Fundamentals"
+author: "Davis Rakhshan"
+---
+
+```{r}
+# Load the libraries
+library(tidyverse)
+library(recipes)
+library(workflows)
+library(parsnip)
+library(yardstick)
+library(rsample)
+
+# Read the data
+bike_features_tbl <- readRDS("../../scripts/data/bike_features_tbl.rds")
+bike_features_tbl <- bike_features_tbl %>%
+  select(model:url, `Rear Derailleur`, `Shift Lever`) %>%
+mutate(
+  `shimano dura-ace`        = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano dura-ace ") %>% as.numeric(),
+  `shimano ultegra`         = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano ultegra ") %>% as.numeric(),
+  `shimano 105`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano 105 ") %>% as.numeric(),
+  `shimano tiagra`          = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano tiagra ") %>% as.numeric(),
+  `Shimano sora`            = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano sora") %>% as.numeric(),
+  `shimano deore`           = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano deore(?! xt)") %>% as.numeric(),
+  `shimano slx`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano slx") %>% as.numeric(),
+  `shimano grx`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano grx") %>% as.numeric(),
+  `Shimano xt`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano deore xt |shimano xt ") %>% as.numeric(),
+  `Shimano xtr`             = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano xtr") %>% as.numeric(),
+  `Shimano saint`           = `Rear Derailleur` %>% str_to_lower() %>% str_detect("shimano saint") %>% as.numeric(),
+  `SRAM red`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram red") %>% as.numeric(),
+  `SRAM force`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram force") %>% as.numeric(),
+  `SRAM rival`              = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram rival") %>% as.numeric(),
+  `SRAM apex`               = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram apex") %>% as.numeric(),
+  `SRAM xx1`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram xx1") %>% as.numeric(),
+  `SRAM x01`                = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram x01|sram xo1") %>% as.numeric(),
+  `SRAM gx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram gx") %>% as.numeric(),
+  `SRAM nx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram nx") %>% as.numeric(),
+  `SRAM sx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram sx") %>% as.numeric(),
+  `SRAM sx`                 = `Rear Derailleur` %>% str_to_lower() %>% str_detect("sram sx") %>% as.numeric(),
+  `Campagnolo potenza`      = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo potenza") %>% as.numeric(),
+  `Campagnolo super record` = `Rear Derailleur` %>% str_to_lower() %>% str_detect("campagnolo super record") %>% as.numeric(),
+  `shimano nexus`           = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano nexus") %>% as.numeric(),
+  `shimano alfine`          = `Shift Lever`     %>% str_to_lower() %>% str_detect("shimano alfine") %>% as.numeric()
+) %>%
+  # Remove original columns
+  select(-c(`Rear Derailleur`, `Shift Lever`, `url`)) %>%
+  # Set all NAs to 0
+  mutate_if(is.numeric, ~replace(., is.na(.), 0))
+
+# Split the data into training and testing sets
+set.seed(1123)  # For reproducibility
+data_split <- initial_split(bike_features_tbl, prop = 0.9)
+train_tbl <- training(data_split)
+test_tbl <- testing(data_split) 
+
+
+# Define the model
+linear_model <- linear_reg() %>%
+  set_engine("lm")
+
+recipe_obj <- recipe(price ~ ., data = train_tbl) %>% 
+  step_rm(category_1, category_3, gender, weight) %>%
+  step_dummy(all_nominal(), -all_outcomes()) 
+
+
+# Create the workflow with recipe steps directly
+workflow_obj <- workflow() %>%
+  add_recipe(recipe_obj) %>%
+  add_model(linear_model)
+
+
+# Fit the workflow
+fit_workflow <- workflow_obj %>%
+  fit(data = train_tbl)
+
+
+# Make predictions using the fitted workflow
+predictions <- predict(fit_workflow, new_data = test_tbl)
+
+# Calculate metrics
+metrics <- predictions %>% 
+  bind_cols(test_tbl %>% select(price)) %>%
+  yardstick::metrics(truth = price, estimate = .pred)
+
+
+# Print the metrics
+print(metrics)
+
+```

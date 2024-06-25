@@ -968,12 +968,16 @@ train_tbl <- training(split_obj)
 test_tbl <- testing(split_obj)
 
 # Initialize H2O
-h2o.init(max_mem_size = "4G")
+h2o.init()
 
 # Convert data frames to H2O objects
 train_h2o <- as.h2o(train_tbl)
 #valid_h2o <- as.h2o(valid_tbl)
 test_h2o <- as.h2o(test_tbl)
+
+# Specify the response and predictor variables
+y <- "went_on_backorder"
+x <- setdiff(names(train_tbl), y)
 
 
 # Run AutoML

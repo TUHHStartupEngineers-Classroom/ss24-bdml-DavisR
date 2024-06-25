@@ -47,9 +47,9 @@ mutate(
 set.seed(1123)  # For reproducibility
 data_split <- initial_split(bike_features_tbl, prop = 0.9)
 train_tbl <- training(data_split)
-train_tbl$`Brake Rotor` <- unlist(train_tbl$`Brake Rotor`)
 test_tbl <- testing(data_split) 
-test_tbl$`Brake Rotor` <- unlist(test_tbl$`Brake Rotor`)
+# train_tbl$`Brake Rotor` <- unlist(train_tbl$`Brake Rotor`)
+# test_tbl$`Brake Rotor` <- unlist(test_tbl$`Brake Rotor`)
 
 
 # Define the model

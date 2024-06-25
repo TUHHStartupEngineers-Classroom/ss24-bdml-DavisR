@@ -31,25 +31,9 @@ split_obj <- rsample::initial_split(employee_attrition_readable_tbl, prop = 0.85
 train_readable_tbl <- training(split_obj)
 test_readable_tbl  <- testing(split_obj)
 
-# Align levels of factor columns in test set with the training set
-align_levels <- function(train, test) {
-  for (col in colnames(train)) {
-    if (is.factor(train[[col]]) && is.factor(test[[col]])) {
-      levels_to_use <- levels(train[[col]])
-      test[[col]] <- factor(test[[col]], levels = levels_to_use)
-    }
-  }
-  return(test)
-}
-
-# Apply level alignment before baking the data
-test_readable_tbl <- align_levels(train_readable_tbl, test_readable_tbl)
-
-
-# ML Preprocessing Recipe 
 recipe_obj <- recipe(Attrition ~ ., data = train_readable_tbl) %>%
   step_zv(all_predictors()) %>%
-  step_mutate_at(c("JobLevel", "StockOptionLevel"), fn = as.factor) %>% 
+  step_mutate_at(c("JobLevel", "StockOptionLevel"), fn = as.factor) %>%
   prep()
 
 recipe_obj
@@ -59,12 +43,14 @@ test_tbl  <- bake(recipe_obj, new_data = test_readable_tbl)
 
 
 
+
 # 2. Models ----
 
 h2o.init()
 
-automl_leader <- h2o.loadModel("scripts/data/h2o_models/StackedEnsemble_AllModels_4_AutoML_1_20240624_163359")
+automl_leader <- h2o.loadModel("scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1")
 automl_leader
+
 
 # Convert data frames to H2O frames
 train_h2o <- as.h2o(train_tbl)
@@ -75,7 +61,6 @@ test_h2o <- as.h2o(test_tbl)
 # 3.1 Making Predictions ----
 
 # Making Predictions
-pred <- h2o.predict(automl_leader, newdata = train_h2o)
 
 predictions_tbl <- automl_leader %>% 
   h2o.predict(newdata = as.h2o(test_tbl)) %>%
@@ -139,3 +124,82 @@ explanation <- test_tbl %>%
   )
 
 explanation
+
+explanation %>%
+  as.tibble() %>%
+  select(feature:prediction) 
+
+g <- plot_features(explanation = explanation, ncol = 1)
+g
+# 3.3 Multiple Explanations ----
+
+explanation <- test_tbl %>%
+  slice(1:20) %>%
+  select(-Attrition) %>%
+  lime::explain(
+    explainer = explainer,
+    n_labels   = 1,
+    n_features = 8,
+    n_permutations = 5000,
+    kernel_width   = 0.5
+  )
+
+explanation %>%
+  as.tibble()
+
+plot_features(explanation, ncol = 4)
+plot_explanations(explanation)
+
+
+# Challenge
+# Custom plot function for a single case
+plot_features_custom <- function(explanation_data, case_id = 1) {
+  case_data <- explanation_data %>% filter(case == case_id)
+  
+  case_data %>%
+    mutate(feature_desc = factor(feature_desc, levels = rev(feature_desc)),  # Ensure correct ordering
+           label = ifelse(feature_weight > 0, "Supports", "Contradicts"),
+           color = ifelse(label == "Supports", "#4682b4", "#b22222")) %>%
+    ggplot(aes(x = feature_desc, y = feature_weight, fill = label)) +
+    geom_col(color = "black") +
+    coord_flip() +
+    labs(x = "Feature", y = "Weight") +
+    scale_fill_manual(values = c("Supports" = "#4682b4", "Contradicts" = "#b22222")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for better readability
+    #geom_text(aes(label = feature_weight), position = position_stack(vjust = 0.5), color = "white") +
+    ggtitle(paste0("Case: ", case_id, "\n",
+                   "Label: ", unique(case_data$label), "\n",
+                   "Probability: ", round(unique(case_data$label_prob), 2), "\n",
+                   "Explanation Fit: ", round(unique(case_data$model_r2), 2))) +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 12))
+}
+
+# Example usage with your explanation data
+plot_features_custom(explanation, case_id = 1)
+
+
+# Define a custom plot function for plot_explanations()
+plot_explanations_custom <- function(explanation, ...) {
+  explanation$feature_desc <- factor(
+    explanation$feature_desc,
+    levels = rev(unique(explanation$feature_desc[order(explanation$feature, explanation$feature_value)]))
+  )
+  num_cases <- unique(suppressWarnings(as.numeric(explanation$case)))
+  if (!anyNA(num_cases)) {
+    explanation$case <- factor(explanation$case, levels = as.character(sort(num_cases)))
+  }
+  p <- ggplot(explanation, aes_(~case, ~feature_desc)) +
+    geom_tile(aes_(fill = ~feature_weight)) +
+    scale_x_discrete('Case', expand = c(0, 0)) +
+    scale_y_discrete('Feature', expand = c(0, 0)) +
+    scale_fill_gradient2('Feature\nweight', low = '#b22222', mid = 'white', high = '#4682b4') +
+    theme_light() +
+    theme(panel.border = element_rect(fill = NA, colour = 'grey', size = 1),
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+  p + facet_wrap(~label)
+}
+
+# Use this function with your explanation data
+plot_explanations_custom(explanation)
