@@ -1,0 +1,70 @@
+---
+title: "Automated Machine Learning with H20 (II)"
+author: "Davis Rakhshan"
+---
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(readr)
+library(rsample)
+library(h2o)
+
+# Load data
+product_backorders_tbl <- read_csv("../../scripts/data/product_backorders.csv")
+
+# Check for missing values and handle them
+product_backorders_tbl <- product_backorders_tbl %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), -1, .)))
+
+# Check and adjust data types
+str(product_backorders_tbl)
+
+# Convert categorical variables to factors
+product_backorders_tbl <- product_backorders_tbl %>%
+  mutate(across(where(is.character), as.factor))
+
+# Split data into training, validation, and test sets
+set.seed(1113)  # Setting seed for reproducibility
+split_obj <- rsample::initial_split(product_backorders_tbl, prop = c(0.7))
+
+train_tbl <- training(split_obj)
+test_tbl <- testing(split_obj)
+
+# Initialize H2O
+h2o.init()
+
+# Convert data frames to H2O objects
+train_h2o <- as.h2o(train_tbl)
+test_h2o <- as.h2o(test_tbl)
+
+# Specify response and predictor variables
+y <- "went_on_backorder"
+x <- setdiff(names(train_tbl), y)
+
+# Run AutoML
+automl_models_h2o <- h2o.automl(
+  x = x,
+  y = y,
+  training_frame    = train_h2o,
+  leaderboard_frame = test_h2o,
+  max_runtime_secs  = 300,  # 5 minutes
+  nfolds            = 5
+)
+
+# View leaderboard
+leaderboard <- automl_models_h2o@leaderboard
+print(leaderboard)
+
+# Predict using leader model
+leader_model <- automl_models_h2o@leader
+predictions <- h2o.predict(leader_model, newdata = test_h2o)
+
+# Save leader model
+model_path <- h2o.saveModel(object = leader_model, path = "../../scripts/data/h2o_models", force = TRUE)
+print(model_path)
+
+# Shutdown H2O
+h2o.shutdown(prompt = FALSE)
+
+```

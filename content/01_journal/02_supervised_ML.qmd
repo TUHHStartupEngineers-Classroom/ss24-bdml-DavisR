@@ -4,7 +4,7 @@ author: "Davis Rakhshan"
 ---
 
 ```{r}
-# Load the libraries
+# Load libraries
 library(tidyverse)
 library(recipes)
 library(workflows)
@@ -12,7 +12,7 @@ library(parsnip)
 library(yardstick)
 library(rsample)
 
-# Read the data
+# Read data
 bike_features_tbl <- readRDS("../../scripts/data/bike_features_tbl.rds")
 bike_features_tbl <- bike_features_tbl %>%
   select(model:url, `Rear Derailleur`, `Shift Lever`) %>%
@@ -48,14 +48,14 @@ mutate(
   # Set all NAs to 0
   mutate_if(is.numeric, ~replace(., is.na(.), 0))
 
-# Split the data into training and testing sets
+# Split data into training and testing sets
 set.seed(1123)  # For reproducibility
 data_split <- initial_split(bike_features_tbl, prop = 0.9)
 train_tbl <- training(data_split)
 test_tbl <- testing(data_split) 
 
 
-# Define the model
+# Define model
 linear_model <- linear_reg() %>%
   set_engine("lm")
 
@@ -64,18 +64,18 @@ recipe_obj <- recipe(price ~ ., data = train_tbl) %>%
   step_dummy(all_nominal(), -all_outcomes()) 
 
 
-# Create the workflow with recipe steps directly
+# Create workflow with recipe
 workflow_obj <- workflow() %>%
   add_recipe(recipe_obj) %>%
   add_model(linear_model)
 
 
-# Fit the workflow
+# Fit workflow
 fit_workflow <- workflow_obj %>%
   fit(data = train_tbl)
 
 
-# Make predictions using the fitted workflow
+# Make predictions using fitted workflow
 predictions <- predict(fit_workflow, new_data = test_tbl)
 
 # Calculate metrics
@@ -84,7 +84,7 @@ metrics <- predictions %>%
   yardstick::metrics(truth = price, estimate = .pred)
 
 
-# Print the metrics
+# Print metrics
 print(metrics)
 
 ```
