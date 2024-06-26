@@ -183,17 +183,21 @@ plot_features_custom(explanation, case_id = 1)
 plot_explanations_custom <- function(explanation, ...) {
   explanation$feature_desc <- factor(
     explanation$feature_desc,
-    levels = rev(unique(explanation$feature_desc[order(explanation$feature, explanation$feature_value)]))
+    levels = rev(unique(
+      explanation$feature_desc[
+        order(explanation$feature, explanation$feature_value)
+        ]))
   )
+
   num_cases <- unique(suppressWarnings(as.numeric(explanation$case)))
   if (!anyNA(num_cases)) {
     explanation$case <- factor(explanation$case, levels = as.character(sort(num_cases)))
   }
   p <- ggplot(explanation, aes_(~case, ~feature_desc)) +
     geom_tile(aes_(fill = ~feature_weight)) +
-    scale_x_discrete('Case', expand = c(0, 0)) +
-    scale_y_discrete('Feature', expand = c(0, 0)) +
     scale_fill_gradient2('Feature\nweight', low = '#b22222', mid = 'white', high = '#4682b4') +
+    scale_y_discrete('Feature', expand = c(0, 0)) +
+    scale_x_discrete('Case', expand = c(0, 0)) +
     theme_light() +
     theme(panel.border = element_rect(fill = NA, colour = 'grey', size = 1),
           panel.grid = element_blank(),

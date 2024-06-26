@@ -5,7 +5,7 @@
 <meta name="generator" content="quarto-1.3.450">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <meta name="author" content="Davis Rakhshan">
-<title>MyLabJournal - Data Acquisition</title>
+<title>MyLabJournal - Explaining Black-Box Models With LIME</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -169,7 +169,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><div class="quarto-title">
-<h1 class="title">Data Acquisition</h1>
+<h1 class="title">Explaining Black-Box Models With LIME</h1>
 </div>
 
 
@@ -188,155 +188,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </div>
   
 
-</header><div class="cell" data-hash="07_explain_black_box_with_lime_cache/html/unnamed-chunk-1_c8d35fdb41783c57119b4f25fb674991">
+</header><div class="cell" data-hash="07_explain_black_box_with_lime_cache/html/unnamed-chunk-1_027ad27046eb11d8d09b50b7ea2ee6c3">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># LIME FEATURE EXPLANATION ----</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a></span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="co"># 1. Setup ----</span></span>
 <span id="cb1-4"><a href="#cb1-4"></a></span>
 <span id="cb1-5"><a href="#cb1-5"></a><span class="co"># Load Libraries </span></span>
 <span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; 
-#&gt; ----------------------------------------------------------------------
-#&gt; 
-#&gt; Your next step is to start H2O:
-#&gt;     &gt; h2o.init()
-#&gt; 
-#&gt; For H2O package documentation, ask for help:
-#&gt;     &gt; ??h2o
-#&gt; 
-#&gt; After starting H2O, you can use the Web UI at http://localhost:54321
-#&gt; For more information visit https://docs.h2o.ai
-#&gt; 
-#&gt; ----------------------------------------------------------------------</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; 
-#&gt; Attache Paket: 'h2o'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Die folgenden Objekte sind maskiert von 'package:stats':
-#&gt; 
-#&gt;     cor, sd, var</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Die folgenden Objekte sind maskiert von 'package:base':
-#&gt; 
-#&gt;     %*%, %in%, &amp;&amp;, ||, apply, as.factor, as.numeric, colnames,
-#&gt;     colnames&lt;-, ifelse, is.character, is.factor, is.numeric, log,
-#&gt;     log10, log1p, log2, round, signif, trunc</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(recipes)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Lade nötiges Paket: dplyr</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; 
-#&gt; Attache Paket: 'dplyr'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Die folgenden Objekte sind maskiert von 'package:stats':
-#&gt; 
-#&gt;     filter, lag</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Die folgenden Objekte sind maskiert von 'package:base':
-#&gt; 
-#&gt;     intersect, setdiff, setequal, union</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; 
-#&gt; Attache Paket: 'recipes'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Das folgende Objekt ist maskiert 'package:stats':
-#&gt; 
-#&gt;     step</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">library</span>(readxl)</span>
-<span id="cb13-2"><a href="#cb13-2"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-#&gt; ✔ forcats   1.0.0     ✔ readr     2.1.5
-#&gt; ✔ ggplot2   3.5.0     ✔ stringr   1.5.1
-#&gt; ✔ lubridate 1.9.3     ✔ tibble    3.2.1
-#&gt; ✔ purrr     1.0.2     ✔ tidyr     1.3.1</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-#&gt; ✖ lubridate::day()   masks h2o::day()
-#&gt; ✖ dplyr::filter()    masks stats::filter()
-#&gt; ✖ stringr::fixed()   masks recipes::fixed()
-#&gt; ✖ lubridate::hour()  masks h2o::hour()
-#&gt; ✖ dplyr::lag()       masks stats::lag()
-#&gt; ✖ lubridate::month() masks h2o::month()
-#&gt; ✖ lubridate::week()  masks h2o::week()
-#&gt; ✖ lubridate::year()  masks h2o::year()
-#&gt; ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(tidyquant)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Lade nötiges Paket: PerformanceAnalytics
-#&gt; Lade nötiges Paket: xts
-#&gt; Lade nötiges Paket: zoo
-#&gt; 
-#&gt; Attache Paket: 'zoo'
-#&gt; 
-#&gt; Die folgenden Objekte sind maskiert von 'package:base':
-#&gt; 
-#&gt;     as.Date, as.Date.numeric
-#&gt; 
-#&gt; 
-#&gt; ######################### Warning from 'xts' package ##########################
-#&gt; #                                                                             #
-#&gt; # The dplyr lag() function breaks how base R's lag() function is supposed to  #
-#&gt; # work, which breaks lag(my_xts). Calls to lag(my_xts) that you type or       #
-#&gt; # source() into this session won't work correctly.                            #
-#&gt; #                                                                             #
-#&gt; # Use stats::lag() to make sure you're not using dplyr::lag(), or you can add #
-#&gt; # conflictRules('dplyr', exclude = 'lag') to your .Rprofile to stop           #
-#&gt; # dplyr from breaking base R's lag() function.                                #
-#&gt; #                                                                             #
-#&gt; # Code in packages is not affected. It's protected by R's namespace mechanism #
-#&gt; # Set `options(xts.warn_dplyr_breaks_lag = FALSE)` to suppress this warning.  #
-#&gt; #                                                                             #
-#&gt; ###############################################################################
-#&gt; 
-#&gt; Attache Paket: 'xts'
-#&gt; 
-#&gt; Die folgenden Objekte sind maskiert von 'package:dplyr':
-#&gt; 
-#&gt;     first, last
-#&gt; 
-#&gt; 
-#&gt; Attache Paket: 'PerformanceAnalytics'
-#&gt; 
-#&gt; Das folgende Objekt ist maskiert 'package:graphics':
-#&gt; 
-#&gt;     legend
-#&gt; 
-#&gt; Lade nötiges Paket: quantmod
-#&gt; Lade nötiges Paket: TTR
-#&gt; Registered S3 method overwritten by 'quantmod':
-#&gt;   method            from
-#&gt;   as.zoo.data.frame zoo</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(lime)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; 
-#&gt; Attache Paket: 'lime'
-#&gt; 
-#&gt; Das folgende Objekt ist maskiert 'package:dplyr':
-#&gt; 
-#&gt;     explain</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">library</span>(rsample)</span>
-<span id="cb20-3"><a href="#cb20-3"></a></span>
-<span id="cb20-4"><a href="#cb20-4"></a></span>
-<span id="cb20-5"><a href="#cb20-5"></a><span class="co"># Load Data</span></span>
-<span id="cb20-6"><a href="#cb20-6"></a>employee_attrition_tbl <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../../scripts/data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(h2o)</span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">library</span>(recipes)</span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="fu">library</span>(tidyquant)</span>
+<span id="cb1-12"><a href="#cb1-12"></a><span class="fu">library</span>(lime)</span>
+<span id="cb1-13"><a href="#cb1-13"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-14"><a href="#cb1-14"></a><span class="fu">library</span>(rsample)</span>
+<span id="cb1-15"><a href="#cb1-15"></a></span>
+<span id="cb1-16"><a href="#cb1-16"></a></span>
+<span id="cb1-17"><a href="#cb1-17"></a><span class="co"># Load Data</span></span>
+<span id="cb1-18"><a href="#cb1-18"></a>employee_attrition_tbl <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../../scripts/data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Rows: 1470 Columns: 35
 #&gt; ── Column specification ────────────────────────────────────────────────────────
@@ -347,16 +217,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; ℹ Use `spec()` to retrieve the full column specification for this data.
 #&gt; ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>definitions_raw_tbl    <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"../../scripts/data/data_definitions.xlsx"</span>, <span class="at">sheet =</span> <span class="dv">1</span>, <span class="at">col_names =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>definitions_raw_tbl    <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"../../scripts/data/data_definitions.xlsx"</span>, <span class="at">sheet =</span> <span class="dv">1</span>, <span class="at">col_names =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; New names:
 #&gt; • `` -&gt; `...1`
 #&gt; • `` -&gt; `...2`</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># Processing Pipeline</span></span>
-<span id="cb24-2"><a href="#cb24-2"></a><span class="fu">source</span>(<span class="st">"../../scripts/data/data_processing_pipeline.R"</span>)</span>
-<span id="cb24-3"><a href="#cb24-3"></a></span>
-<span id="cb24-4"><a href="#cb24-4"></a>employee_attrition_readable_tbl <span class="ot">&lt;-</span> <span class="fu">process_hr_data_readable</span>(employee_attrition_tbl, definitions_raw_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># Processing Pipeline</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">source</span>(<span class="st">"../../scripts/data/data_processing_pipeline.R"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3"></a></span>
+<span id="cb5-4"><a href="#cb5-4"></a>employee_attrition_readable_tbl <span class="ot">&lt;-</span> <span class="fu">process_hr_data_readable</span>(employee_attrition_tbl, definitions_raw_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Joining with `by = join_by(Education)`
 #&gt; Joining with `by = join_by(EnvironmentSatisfaction)`
@@ -366,20 +236,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; Joining with `by = join_by(RelationshipSatisfaction)`
 #&gt; Joining with `by = join_by(WorkLifeBalance)`</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># Split into test and train</span></span>
-<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">set.seed</span>(<span class="at">seed =</span> <span class="dv">1113</span>)</span>
-<span id="cb26-3"><a href="#cb26-3"></a>split_obj <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">initial_split</span>(employee_attrition_readable_tbl, <span class="at">prop =</span> <span class="fl">0.85</span>)</span>
-<span id="cb26-4"><a href="#cb26-4"></a></span>
-<span id="cb26-5"><a href="#cb26-5"></a><span class="co"># Assign training and test data</span></span>
-<span id="cb26-6"><a href="#cb26-6"></a>train_readable_tbl <span class="ot">&lt;-</span> <span class="fu">training</span>(split_obj)</span>
-<span id="cb26-7"><a href="#cb26-7"></a>test_readable_tbl  <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_obj)</span>
-<span id="cb26-8"><a href="#cb26-8"></a></span>
-<span id="cb26-9"><a href="#cb26-9"></a>recipe_obj <span class="ot">&lt;-</span> <span class="fu">recipe</span>(Attrition <span class="sc">~</span> ., <span class="at">data =</span> train_readable_tbl) <span class="sc">%&gt;%</span></span>
-<span id="cb26-10"><a href="#cb26-10"></a>  <span class="fu">step_zv</span>(<span class="fu">all_predictors</span>()) <span class="sc">%&gt;%</span></span>
-<span id="cb26-11"><a href="#cb26-11"></a>  <span class="fu">step_mutate_at</span>(<span class="fu">c</span>(<span class="st">"JobLevel"</span>, <span class="st">"StockOptionLevel"</span>), <span class="at">fn =</span> as.factor) <span class="sc">%&gt;%</span></span>
-<span id="cb26-12"><a href="#cb26-12"></a>  <span class="fu">prep</span>()</span>
-<span id="cb26-13"><a href="#cb26-13"></a></span>
-<span id="cb26-14"><a href="#cb26-14"></a>recipe_obj</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># Split into test and train</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">set.seed</span>(<span class="at">seed =</span> <span class="dv">1113</span>)</span>
+<span id="cb7-3"><a href="#cb7-3"></a>split_obj <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">initial_split</span>(employee_attrition_readable_tbl, <span class="at">prop =</span> <span class="fl">0.85</span>)</span>
+<span id="cb7-4"><a href="#cb7-4"></a></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="co"># Assign training and test data</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>train_readable_tbl <span class="ot">&lt;-</span> <span class="fu">training</span>(split_obj)</span>
+<span id="cb7-7"><a href="#cb7-7"></a>test_readable_tbl  <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_obj)</span>
+<span id="cb7-8"><a href="#cb7-8"></a></span>
+<span id="cb7-9"><a href="#cb7-9"></a>recipe_obj <span class="ot">&lt;-</span> <span class="fu">recipe</span>(Attrition <span class="sc">~</span> ., <span class="at">data =</span> train_readable_tbl) <span class="sc">%&gt;%</span></span>
+<span id="cb7-10"><a href="#cb7-10"></a>  <span class="fu">step_zv</span>(<span class="fu">all_predictors</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb7-11"><a href="#cb7-11"></a>  <span class="fu">step_mutate_at</span>(<span class="fu">c</span>(<span class="st">"JobLevel"</span>, <span class="st">"StockOptionLevel"</span>), <span class="at">fn =</span> as.factor) <span class="sc">%&gt;%</span></span>
+<span id="cb7-12"><a href="#cb7-12"></a>  <span class="fu">prep</span>()</span>
+<span id="cb7-13"><a href="#cb7-13"></a></span>
+<span id="cb7-14"><a href="#cb7-14"></a>recipe_obj</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; 
 #&gt; ── Recipe ──────────────────────────────────────────────────────────────────────
@@ -396,27 +266,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; • Zero variance filter removed: EmployeeCount and Over18, ... | Trained
 #&gt; • Variable mutation for: JobLevel and StockOptionLevel | Trained</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>train_tbl <span class="ot">&lt;-</span> <span class="fu">bake</span>(recipe_obj, <span class="at">new_data =</span> train_readable_tbl)</span>
-<span id="cb28-2"><a href="#cb28-2"></a>test_tbl  <span class="ot">&lt;-</span> <span class="fu">bake</span>(recipe_obj, <span class="at">new_data =</span> test_readable_tbl)</span>
-<span id="cb28-3"><a href="#cb28-3"></a></span>
-<span id="cb28-4"><a href="#cb28-4"></a></span>
-<span id="cb28-5"><a href="#cb28-5"></a></span>
-<span id="cb28-6"><a href="#cb28-6"></a></span>
-<span id="cb28-7"><a href="#cb28-7"></a><span class="co"># 2. Models ----</span></span>
-<span id="cb28-8"><a href="#cb28-8"></a></span>
-<span id="cb28-9"><a href="#cb28-9"></a><span class="fu">h2o.init</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>train_tbl <span class="ot">&lt;-</span> <span class="fu">bake</span>(recipe_obj, <span class="at">new_data =</span> train_readable_tbl)</span>
+<span id="cb9-2"><a href="#cb9-2"></a>test_tbl  <span class="ot">&lt;-</span> <span class="fu">bake</span>(recipe_obj, <span class="at">new_data =</span> test_readable_tbl)</span>
+<span id="cb9-3"><a href="#cb9-3"></a></span>
+<span id="cb9-4"><a href="#cb9-4"></a></span>
+<span id="cb9-5"><a href="#cb9-5"></a></span>
+<span id="cb9-6"><a href="#cb9-6"></a></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="co"># 2. Models ----</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="fu">h2o.init</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;  Connection successful!
+<pre><code>#&gt; 
+#&gt; H2O is not running yet, starting it now...
+#&gt; 
+#&gt; Note:  In case of errors look at the following log files:
+#&gt;     C:\Users\Davis-PC\AppData\Local\Temp\RtmpkznvLD\file6d941bb758a1/h2o_Davis_started_from_r.out
+#&gt;     C:\Users\Davis-PC\AppData\Local\Temp\RtmpkznvLD\file6d9477d16aa4/h2o_Davis_started_from_r.err
+#&gt; 
+#&gt; 
+#&gt; Starting H2O JVM and connecting:  Connection successful!
 #&gt; 
 #&gt; R is connected to the H2O cluster: 
-#&gt;     H2O cluster uptime:         2 hours 59 seconds 
+#&gt;     H2O cluster uptime:         2 seconds 855 milliseconds 
 #&gt;     H2O cluster timezone:       Europe/Berlin 
 #&gt;     H2O data parsing timezone:  UTC 
 #&gt;     H2O cluster version:        3.44.0.3 
 #&gt;     H2O cluster version age:    6 months and 5 days 
-#&gt;     H2O cluster name:           H2O_started_from_R_Davis_byi702 
+#&gt;     H2O cluster name:           H2O_started_from_R_Davis_drs368 
 #&gt;     H2O cluster total nodes:    1 
-#&gt;     H2O cluster total memory:   3.70 GB 
+#&gt;     H2O cluster total memory:   7.98 GB 
 #&gt;     H2O cluster total cores:    20 
 #&gt;     H2O cluster allowed cores:  20 
 #&gt;     H2O cluster healthy:        TRUE 
@@ -431,8 +309,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; Your H2O cluster version is (6 months and 5 days) old. There may be a newer version available.
 #&gt; Please download and install the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>automl_leader <span class="ot">&lt;-</span> <span class="fu">h2o.loadModel</span>(<span class="st">"scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1"</span>)</span>
-<span id="cb31-2"><a href="#cb31-2"></a>automl_leader</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>automl_leader <span class="ot">&lt;-</span> <span class="fu">h2o.loadModel</span>(<span class="st">"../../scripts/data/h2o_models/DeepLearning_grid_1_AutoML_1_20240622_153440_model_1"</span>)</span>
+<span id="cb12-2"><a href="#cb12-2"></a>automl_leader</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Model Details:
 #&gt; ==============
@@ -614,8 +492,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; rmse                      0.328570   0.325612
 #&gt; specificity               0.923077   0.918919</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="co"># Convert data frames to H2O frames</span></span>
-<span id="cb33-2"><a href="#cb33-2"></a>train_h2o <span class="ot">&lt;-</span> <span class="fu">as.h2o</span>(train_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># Convert data frames to H2O frames</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>train_h2o <span class="ot">&lt;-</span> <span class="fu">as.h2o</span>(train_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
   |                                                                            
@@ -623,7 +501,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |======================================================================| 100%</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>test_h2o <span class="ot">&lt;-</span> <span class="fu">as.h2o</span>(test_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a>test_h2o <span class="ot">&lt;-</span> <span class="fu">as.h2o</span>(test_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
   |                                                                            
@@ -631,19 +509,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |======================================================================| 100%</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a><span class="co"># 3. LIME ----</span></span>
-<span id="cb37-2"><a href="#cb37-2"></a></span>
-<span id="cb37-3"><a href="#cb37-3"></a><span class="co"># 3.1 Making Predictions ----</span></span>
-<span id="cb37-4"><a href="#cb37-4"></a></span>
-<span id="cb37-5"><a href="#cb37-5"></a><span class="co"># Making Predictions</span></span>
-<span id="cb37-6"><a href="#cb37-6"></a></span>
-<span id="cb37-7"><a href="#cb37-7"></a>predictions_tbl <span class="ot">&lt;-</span> automl_leader <span class="sc">%&gt;%</span> </span>
-<span id="cb37-8"><a href="#cb37-8"></a>  <span class="fu">h2o.predict</span>(<span class="at">newdata =</span> <span class="fu">as.h2o</span>(test_tbl)) <span class="sc">%&gt;%</span></span>
-<span id="cb37-9"><a href="#cb37-9"></a>  <span class="fu">as.tibble</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb37-10"><a href="#cb37-10"></a>  <span class="fu">bind_cols</span>(</span>
-<span id="cb37-11"><a href="#cb37-11"></a>    test_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb37-12"><a href="#cb37-12"></a>      <span class="fu">select</span>(Attrition, EmployeeNumber)</span>
-<span id="cb37-13"><a href="#cb37-13"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 3. LIME ----</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a></span>
+<span id="cb18-3"><a href="#cb18-3"></a><span class="co"># 3.1 Making Predictions ----</span></span>
+<span id="cb18-4"><a href="#cb18-4"></a></span>
+<span id="cb18-5"><a href="#cb18-5"></a><span class="co"># Making Predictions</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a></span>
+<span id="cb18-7"><a href="#cb18-7"></a>predictions_tbl <span class="ot">&lt;-</span> automl_leader <span class="sc">%&gt;%</span> </span>
+<span id="cb18-8"><a href="#cb18-8"></a>  <span class="fu">h2o.predict</span>(<span class="at">newdata =</span> <span class="fu">as.h2o</span>(test_tbl)) <span class="sc">%&gt;%</span></span>
+<span id="cb18-9"><a href="#cb18-9"></a>  <span class="fu">as.tibble</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb18-10"><a href="#cb18-10"></a>  <span class="fu">bind_cols</span>(</span>
+<span id="cb18-11"><a href="#cb18-11"></a>    test_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb18-12"><a href="#cb18-12"></a>      <span class="fu">select</span>(Attrition, EmployeeNumber)</span>
+<span id="cb18-13"><a href="#cb18-13"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning: `as.tibble()` was deprecated in tibble 2.0.0.
 #&gt; ℹ Please use `as_tibble()` instead.
@@ -661,7 +539,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |======================================================================| 100%</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a>predictions_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>predictions_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
 <div data-pagedtable="false">
@@ -670,9 +548,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1"></a>test_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb41-2"><a href="#cb41-2"></a>  <span class="fu">slice</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb41-3"><a href="#cb41-3"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>test_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb22-2"><a href="#cb22-2"></a>  <span class="fu">slice</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-3"><a href="#cb22-3"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Rows: 1
 #&gt; Columns: 32
@@ -709,18 +587,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; $ YearsWithCurrManager     &lt;dbl&gt; 0
 #&gt; $ Attrition                &lt;fct&gt; No</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1"></a><span class="co"># 3.2 Single Explanation ----</span></span>
-<span id="cb43-2"><a href="#cb43-2"></a></span>
-<span id="cb43-3"><a href="#cb43-3"></a>explainer <span class="ot">&lt;-</span> train_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb43-4"><a href="#cb43-4"></a>  <span class="fu">select</span>(<span class="sc">-</span>Attrition) <span class="sc">%&gt;%</span></span>
-<span id="cb43-5"><a href="#cb43-5"></a>  <span class="fu">lime</span>(</span>
-<span id="cb43-6"><a href="#cb43-6"></a>    <span class="at">model           =</span> automl_leader,</span>
-<span id="cb43-7"><a href="#cb43-7"></a>    <span class="at">bin_continuous  =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb43-8"><a href="#cb43-8"></a>    <span class="at">n_bins          =</span> <span class="dv">4</span>,</span>
-<span id="cb43-9"><a href="#cb43-9"></a>    <span class="at">quantile_bins   =</span> <span class="cn">TRUE</span></span>
-<span id="cb43-10"><a href="#cb43-10"></a>  )</span>
-<span id="cb43-11"><a href="#cb43-11"></a></span>
-<span id="cb43-12"><a href="#cb43-12"></a>explainer</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># 3.2 Single Explanation ----</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a></span>
+<span id="cb24-3"><a href="#cb24-3"></a>explainer <span class="ot">&lt;-</span> train_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb24-4"><a href="#cb24-4"></a>  <span class="fu">select</span>(<span class="sc">-</span>Attrition) <span class="sc">%&gt;%</span></span>
+<span id="cb24-5"><a href="#cb24-5"></a>  <span class="fu">lime</span>(</span>
+<span id="cb24-6"><a href="#cb24-6"></a>    <span class="at">model           =</span> automl_leader,</span>
+<span id="cb24-7"><a href="#cb24-7"></a>    <span class="at">bin_continuous  =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb24-8"><a href="#cb24-8"></a>    <span class="at">n_bins          =</span> <span class="dv">4</span>,</span>
+<span id="cb24-9"><a href="#cb24-9"></a>    <span class="at">quantile_bins   =</span> <span class="cn">TRUE</span></span>
+<span id="cb24-10"><a href="#cb24-10"></a>  )</span>
+<span id="cb24-11"><a href="#cb24-11"></a></span>
+<span id="cb24-12"><a href="#cb24-12"></a>explainer</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; $model
 #&gt; Model Details:
@@ -906,8 +784,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; $preprocess
 #&gt; function (x) 
 #&gt; x
-#&gt; &lt;bytecode: 0x0000026310a2d048&gt;
-#&gt; &lt;environment: 0x0000026310a255b8&gt;
+#&gt; &lt;bytecode: 0x0000028bfab44720&gt;
+#&gt; &lt;environment: 0x0000028bfab32b60&gt;
 #&gt; 
 #&gt; $bin_continuous
 #&gt; [1] TRUE
@@ -1221,22 +1099,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; attr(,"class")
 #&gt; [1] "data_frame_explainer" "explainer"            "list"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1"></a>explanation <span class="ot">&lt;-</span> test_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb45-2"><a href="#cb45-2"></a>  <span class="fu">slice</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb45-3"><a href="#cb45-3"></a>  <span class="fu">select</span>(<span class="sc">-</span>Attrition) <span class="sc">%&gt;%</span></span>
-<span id="cb45-4"><a href="#cb45-4"></a>  lime<span class="sc">::</span><span class="fu">explain</span>(</span>
-<span id="cb45-5"><a href="#cb45-5"></a>    </span>
-<span id="cb45-6"><a href="#cb45-6"></a>    <span class="co"># Pass our explainer object</span></span>
-<span id="cb45-7"><a href="#cb45-7"></a>    <span class="at">explainer =</span> explainer,</span>
-<span id="cb45-8"><a href="#cb45-8"></a>    <span class="co"># Because it is a binary classification model: 1</span></span>
-<span id="cb45-9"><a href="#cb45-9"></a>    <span class="at">n_labels   =</span> <span class="dv">1</span>,</span>
-<span id="cb45-10"><a href="#cb45-10"></a>    <span class="co"># number of features to be returned</span></span>
-<span id="cb45-11"><a href="#cb45-11"></a>    <span class="at">n_features =</span> <span class="dv">8</span>,</span>
-<span id="cb45-12"><a href="#cb45-12"></a>    <span class="co"># number of localized linear models</span></span>
-<span id="cb45-13"><a href="#cb45-13"></a>    <span class="at">n_permutations =</span> <span class="dv">5000</span>,</span>
-<span id="cb45-14"><a href="#cb45-14"></a>    <span class="co"># Let's start with 1</span></span>
-<span id="cb45-15"><a href="#cb45-15"></a>    <span class="at">kernel_width   =</span> <span class="dv">1</span></span>
-<span id="cb45-16"><a href="#cb45-16"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>explanation <span class="ot">&lt;-</span> test_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb26-2"><a href="#cb26-2"></a>  <span class="fu">slice</span>(<span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb26-3"><a href="#cb26-3"></a>  <span class="fu">select</span>(<span class="sc">-</span>Attrition) <span class="sc">%&gt;%</span></span>
+<span id="cb26-4"><a href="#cb26-4"></a>  lime<span class="sc">::</span><span class="fu">explain</span>(</span>
+<span id="cb26-5"><a href="#cb26-5"></a>    </span>
+<span id="cb26-6"><a href="#cb26-6"></a>    <span class="co"># Pass our explainer object</span></span>
+<span id="cb26-7"><a href="#cb26-7"></a>    <span class="at">explainer =</span> explainer,</span>
+<span id="cb26-8"><a href="#cb26-8"></a>    <span class="co"># Because it is a binary classification model: 1</span></span>
+<span id="cb26-9"><a href="#cb26-9"></a>    <span class="at">n_labels   =</span> <span class="dv">1</span>,</span>
+<span id="cb26-10"><a href="#cb26-10"></a>    <span class="co"># number of features to be returned</span></span>
+<span id="cb26-11"><a href="#cb26-11"></a>    <span class="at">n_features =</span> <span class="dv">8</span>,</span>
+<span id="cb26-12"><a href="#cb26-12"></a>    <span class="co"># number of localized linear models</span></span>
+<span id="cb26-13"><a href="#cb26-13"></a>    <span class="at">n_permutations =</span> <span class="dv">5000</span>,</span>
+<span id="cb26-14"><a href="#cb26-14"></a>    <span class="co"># Let's start with 1</span></span>
+<span id="cb26-15"><a href="#cb26-15"></a>    <span class="at">kernel_width   =</span> <span class="dv">1</span></span>
+<span id="cb26-16"><a href="#cb26-16"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
   |                                                                            
@@ -1249,46 +1127,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |======================================================================| 100%</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1"></a>explanation</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>explanation</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
-{"columns":[{"label":["model_type"],"name":[1],"type":["chr"],"align":["left"]},{"label":["case"],"name":[2],"type":["chr"],"align":["left"]},{"label":["label"],"name":[3],"type":["chr"],"align":["left"]},{"label":["label_prob"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["model_r2"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["model_intercept"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["model_prediction"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["feature"],"name":[8],"type":["chr"],"align":["left"]},{"label":["feature_value"],"name":[9],"type":["fct"],"align":["left"]},{"label":["feature_weight"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["feature_desc"],"name":[11],"type":["chr"],"align":["left"]},{"label":["data"],"name":[12],"type":["list"],"align":["right"]},{"label":["prediction"],"name":[13],"type":["list"],"align":["right"]}],"data":[{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"OverTime","9":"Yes","10":"-0.13368380","11":"OverTime = Yes","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"Department","9":"Research & Development","10":"0.05126974","11":"Department = Research & Development","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"JobLevel","9":"1","10":"-0.04899682","11":"JobLevel = 1","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"JobInvolvement","9":"Very High","10":"0.04741785","11":"JobInvolvement = Very High","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"RelationshipSatisfaction","9":"Low","10":"-0.04193560","11":"RelationshipSatisfaction = Low","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"BusinessTravel","9":"Travel_Rarely","10":"0.03771441","11":"BusinessTravel = Travel_Rarely","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"StockOptionLevel","9":"3","10":"-0.03800943","11":"StockOptionLevel = 3","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1959427","6":"0.918242","7":"0.8288123","8":"PerformanceRating","9":"Outstanding","10":"0.03679394","11":"PerformanceRating = Outstanding","12":"<named list [31]>","13":"<named list [2]>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":["model_type"],"name":[1],"type":["chr"],"align":["left"]},{"label":["case"],"name":[2],"type":["chr"],"align":["left"]},{"label":["label"],"name":[3],"type":["chr"],"align":["left"]},{"label":["label_prob"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["model_r2"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["model_intercept"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["model_prediction"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["feature"],"name":[8],"type":["chr"],"align":["left"]},{"label":["feature_value"],"name":[9],"type":["fct"],"align":["left"]},{"label":["feature_weight"],"name":[10],"type":["dbl"],"align":["right"]},{"label":["feature_desc"],"name":[11],"type":["chr"],"align":["left"]},{"label":["data"],"name":[12],"type":["list"],"align":["right"]},{"label":["prediction"],"name":[13],"type":["list"],"align":["right"]}],"data":[{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"OverTime","9":"Yes","10":"-0.13386604","11":"OverTime = Yes","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"Department","9":"Research & Development","10":"0.05173782","11":"Department = Research & Development","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"JobLevel","9":"1","10":"-0.04891027","11":"JobLevel = 1","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"JobInvolvement","9":"Very High","10":"0.04752984","11":"JobInvolvement = Very High","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"RelationshipSatisfaction","9":"Low","10":"-0.04212035","11":"RelationshipSatisfaction = Low","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"BusinessTravel","9":"Travel_Rarely","10":"0.03786337","11":"BusinessTravel = Travel_Rarely","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"StockOptionLevel","9":"3","10":"-0.03785315","11":"StockOptionLevel = 3","12":"<named list [31]>","13":"<named list [2]>"},{"1":"classification","2":"1","3":"No","4":"0.9949607","5":"0.1963158","6":"0.9177318","7":"0.8289263","8":"PerformanceRating","9":"Outstanding","10":"0.03681328","11":"PerformanceRating = Outstanding","12":"<named list [31]>","13":"<named list [2]>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>explanation <span class="sc">%&gt;%</span></span>
-<span id="cb48-2"><a href="#cb48-2"></a>  <span class="fu">as.tibble</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb48-3"><a href="#cb48-3"></a>  <span class="fu">select</span>(feature<span class="sc">:</span>prediction) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a>explanation <span class="sc">%&gt;%</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a>  <span class="fu">as.tibble</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb29-3"><a href="#cb29-3"></a>  <span class="fu">select</span>(feature<span class="sc">:</span>prediction) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
-{"columns":[{"label":["feature"],"name":[1],"type":["chr"],"align":["left"]},{"label":["feature_value"],"name":[2],"type":["fct"],"align":["left"]},{"label":["feature_weight"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["feature_desc"],"name":[4],"type":["chr"],"align":["left"]},{"label":["data"],"name":[5],"type":["list"],"align":["right"]},{"label":["prediction"],"name":[6],"type":["list"],"align":["right"]}],"data":[{"1":"OverTime","2":"Yes","3":"-0.13368380","4":"OverTime = Yes","5":"<named list [31]>","6":"<named list [2]>"},{"1":"Department","2":"Research & Development","3":"0.05126974","4":"Department = Research & Development","5":"<named list [31]>","6":"<named list [2]>"},{"1":"JobLevel","2":"1","3":"-0.04899682","4":"JobLevel = 1","5":"<named list [31]>","6":"<named list [2]>"},{"1":"JobInvolvement","2":"Very High","3":"0.04741785","4":"JobInvolvement = Very High","5":"<named list [31]>","6":"<named list [2]>"},{"1":"RelationshipSatisfaction","2":"Low","3":"-0.04193560","4":"RelationshipSatisfaction = Low","5":"<named list [31]>","6":"<named list [2]>"},{"1":"BusinessTravel","2":"Travel_Rarely","3":"0.03771441","4":"BusinessTravel = Travel_Rarely","5":"<named list [31]>","6":"<named list [2]>"},{"1":"StockOptionLevel","2":"3","3":"-0.03800943","4":"StockOptionLevel = 3","5":"<named list [31]>","6":"<named list [2]>"},{"1":"PerformanceRating","2":"Outstanding","3":"0.03679394","4":"PerformanceRating = Outstanding","5":"<named list [31]>","6":"<named list [2]>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":["feature"],"name":[1],"type":["chr"],"align":["left"]},{"label":["feature_value"],"name":[2],"type":["fct"],"align":["left"]},{"label":["feature_weight"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["feature_desc"],"name":[4],"type":["chr"],"align":["left"]},{"label":["data"],"name":[5],"type":["list"],"align":["right"]},{"label":["prediction"],"name":[6],"type":["list"],"align":["right"]}],"data":[{"1":"OverTime","2":"Yes","3":"-0.13386604","4":"OverTime = Yes","5":"<named list [31]>","6":"<named list [2]>"},{"1":"Department","2":"Research & Development","3":"0.05173782","4":"Department = Research & Development","5":"<named list [31]>","6":"<named list [2]>"},{"1":"JobLevel","2":"1","3":"-0.04891027","4":"JobLevel = 1","5":"<named list [31]>","6":"<named list [2]>"},{"1":"JobInvolvement","2":"Very High","3":"0.04752984","4":"JobInvolvement = Very High","5":"<named list [31]>","6":"<named list [2]>"},{"1":"RelationshipSatisfaction","2":"Low","3":"-0.04212035","4":"RelationshipSatisfaction = Low","5":"<named list [31]>","6":"<named list [2]>"},{"1":"BusinessTravel","2":"Travel_Rarely","3":"0.03786337","4":"BusinessTravel = Travel_Rarely","5":"<named list [31]>","6":"<named list [2]>"},{"1":"StockOptionLevel","2":"3","3":"-0.03785315","4":"StockOptionLevel = 3","5":"<named list [31]>","6":"<named list [2]>"},{"1":"PerformanceRating","2":"Outstanding","3":"0.03681328","4":"PerformanceRating = Outstanding","5":"<named list [31]>","6":"<named list [2]>"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1"></a>g <span class="ot">&lt;-</span> <span class="fu">plot_features</span>(<span class="at">explanation =</span> explanation, <span class="at">ncol =</span> <span class="dv">1</span>)</span>
-<span id="cb49-2"><a href="#cb49-2"></a>g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a>g <span class="ot">&lt;-</span> <span class="fu">plot_features</span>(<span class="at">explanation =</span> explanation, <span class="at">ncol =</span> <span class="dv">1</span>)</span>
+<span id="cb30-2"><a href="#cb30-2"></a>g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure"><p><a href="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></a></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1"></a><span class="co"># 3.3 Multiple Explanations ----</span></span>
-<span id="cb50-2"><a href="#cb50-2"></a></span>
-<span id="cb50-3"><a href="#cb50-3"></a>explanation <span class="ot">&lt;-</span> test_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb50-4"><a href="#cb50-4"></a>  <span class="fu">slice</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb50-5"><a href="#cb50-5"></a>  <span class="fu">select</span>(<span class="sc">-</span>Attrition) <span class="sc">%&gt;%</span></span>
-<span id="cb50-6"><a href="#cb50-6"></a>  lime<span class="sc">::</span><span class="fu">explain</span>(</span>
-<span id="cb50-7"><a href="#cb50-7"></a>    <span class="at">explainer =</span> explainer,</span>
-<span id="cb50-8"><a href="#cb50-8"></a>    <span class="at">n_labels   =</span> <span class="dv">1</span>,</span>
-<span id="cb50-9"><a href="#cb50-9"></a>    <span class="at">n_features =</span> <span class="dv">8</span>,</span>
-<span id="cb50-10"><a href="#cb50-10"></a>    <span class="at">n_permutations =</span> <span class="dv">5000</span>,</span>
-<span id="cb50-11"><a href="#cb50-11"></a>    <span class="at">kernel_width   =</span> <span class="fl">0.5</span></span>
-<span id="cb50-12"><a href="#cb50-12"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="co"># 3.3 Multiple Explanations ----</span></span>
+<span id="cb31-2"><a href="#cb31-2"></a></span>
+<span id="cb31-3"><a href="#cb31-3"></a>explanation <span class="ot">&lt;-</span> test_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb31-4"><a href="#cb31-4"></a>  <span class="fu">slice</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb31-5"><a href="#cb31-5"></a>  <span class="fu">select</span>(<span class="sc">-</span>Attrition) <span class="sc">%&gt;%</span></span>
+<span id="cb31-6"><a href="#cb31-6"></a>  lime<span class="sc">::</span><span class="fu">explain</span>(</span>
+<span id="cb31-7"><a href="#cb31-7"></a>    <span class="at">explainer =</span> explainer,</span>
+<span id="cb31-8"><a href="#cb31-8"></a>    <span class="at">n_labels   =</span> <span class="dv">1</span>,</span>
+<span id="cb31-9"><a href="#cb31-9"></a>    <span class="at">n_features =</span> <span class="dv">8</span>,</span>
+<span id="cb31-10"><a href="#cb31-10"></a>    <span class="at">n_permutations =</span> <span class="dv">5000</span>,</span>
+<span id="cb31-11"><a href="#cb31-11"></a>    <span class="at">kernel_width   =</span> <span class="fl">0.5</span></span>
+<span id="cb31-12"><a href="#cb31-12"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
   |                                                                            
@@ -1337,8 +1215,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 #&gt; Warning in `[&lt;-.factor`(`*tmp*`, ri, value = c(1, 4, 0, 2, 1, 1, 1, 2)):
 #&gt; ungültiges Faktorniveau, NA erzeugt</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a>explanation <span class="sc">%&gt;%</span></span>
-<span id="cb54-2"><a href="#cb54-2"></a>  <span class="fu">as.tibble</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>explanation <span class="sc">%&gt;%</span></span>
+<span id="cb35-2"><a href="#cb35-2"></a>  <span class="fu">as.tibble</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
 <div data-pagedtable="false">
@@ -1347,77 +1225,81 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1"></a><span class="fu">plot_features</span>(explanation, <span class="at">ncol =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="fu">plot_features</span>(explanation, <span class="at">ncol =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure"><p><a href="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid figure-img" width="672"></a></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1"></a><span class="fu">plot_explanations</span>(explanation)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a><span class="fu">plot_explanations</span>(explanation)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure"><p><a href="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-3.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-3.png" class="img-fluid figure-img" width="672"></a></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1"></a><span class="co"># Challenge</span></span>
-<span id="cb57-2"><a href="#cb57-2"></a></span>
-<span id="cb57-3"><a href="#cb57-3"></a><span class="co"># Custom plot function for a single case</span></span>
-<span id="cb57-4"><a href="#cb57-4"></a>plot_features_custom <span class="ot">&lt;-</span> <span class="cf">function</span>(explanation_data, <span class="at">case_id =</span> <span class="dv">1</span>) {</span>
-<span id="cb57-5"><a href="#cb57-5"></a>  case_data <span class="ot">&lt;-</span> explanation_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(case <span class="sc">==</span> case_id)</span>
-<span id="cb57-6"><a href="#cb57-6"></a>  </span>
-<span id="cb57-7"><a href="#cb57-7"></a>  case_data <span class="sc">%&gt;%</span></span>
-<span id="cb57-8"><a href="#cb57-8"></a>    <span class="fu">mutate</span>(<span class="at">feature_desc =</span> <span class="fu">factor</span>(feature_desc, <span class="at">levels =</span> <span class="fu">rev</span>(feature_desc)),  <span class="co"># Ensure correct ordering</span></span>
-<span id="cb57-9"><a href="#cb57-9"></a>           <span class="at">label =</span> <span class="fu">ifelse</span>(feature_weight <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="st">"Supports"</span>, <span class="st">"Contradicts"</span>),</span>
-<span id="cb57-10"><a href="#cb57-10"></a>           <span class="at">color =</span> <span class="fu">ifelse</span>(label <span class="sc">==</span> <span class="st">"Supports"</span>, <span class="st">"#4682b4"</span>, <span class="st">"#b22222"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb57-11"><a href="#cb57-11"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> feature_desc, <span class="at">y =</span> feature_weight, <span class="at">fill =</span> label)) <span class="sc">+</span></span>
-<span id="cb57-12"><a href="#cb57-12"></a>    <span class="fu">geom_col</span>(<span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
-<span id="cb57-13"><a href="#cb57-13"></a>    <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
-<span id="cb57-14"><a href="#cb57-14"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Feature"</span>, <span class="at">y =</span> <span class="st">"Weight"</span>) <span class="sc">+</span></span>
-<span id="cb57-15"><a href="#cb57-15"></a>    <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Supports"</span> <span class="ot">=</span> <span class="st">"#4682b4"</span>, <span class="st">"Contradicts"</span> <span class="ot">=</span> <span class="st">"#b22222"</span>)) <span class="sc">+</span></span>
-<span id="cb57-16"><a href="#cb57-16"></a>    <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb57-17"><a href="#cb57-17"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>)) <span class="sc">+</span>  <span class="co"># Rotate x-axis labels for better readability</span></span>
-<span id="cb57-18"><a href="#cb57-18"></a>    <span class="co">#geom_text(aes(label = feature_weight), position = position_stack(vjust = 0.5), color = "white") +</span></span>
-<span id="cb57-19"><a href="#cb57-19"></a>    <span class="fu">ggtitle</span>(<span class="fu">paste0</span>(<span class="st">"Case: "</span>, case_id, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb57-20"><a href="#cb57-20"></a>                   <span class="st">"Label: "</span>, <span class="fu">unique</span>(case_data<span class="sc">$</span>label), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb57-21"><a href="#cb57-21"></a>                   <span class="st">"Probability: "</span>, <span class="fu">round</span>(<span class="fu">unique</span>(case_data<span class="sc">$</span>label_prob), <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb57-22"><a href="#cb57-22"></a>                   <span class="st">"Explanation Fit: "</span>, <span class="fu">round</span>(<span class="fu">unique</span>(case_data<span class="sc">$</span>model_r2), <span class="dv">2</span>))) <span class="sc">+</span></span>
-<span id="cb57-23"><a href="#cb57-23"></a>    <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">12</span>))</span>
-<span id="cb57-24"><a href="#cb57-24"></a>}</span>
-<span id="cb57-25"><a href="#cb57-25"></a></span>
-<span id="cb57-26"><a href="#cb57-26"></a><span class="co"># Example usage with your explanation data</span></span>
-<span id="cb57-27"><a href="#cb57-27"></a><span class="fu">plot_features_custom</span>(explanation, <span class="at">case_id =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a><span class="co"># Challenge</span></span>
+<span id="cb38-2"><a href="#cb38-2"></a></span>
+<span id="cb38-3"><a href="#cb38-3"></a><span class="co"># Custom plot function for a single case</span></span>
+<span id="cb38-4"><a href="#cb38-4"></a>plot_features_custom <span class="ot">&lt;-</span> <span class="cf">function</span>(explanation_data, <span class="at">case_id =</span> <span class="dv">1</span>) {</span>
+<span id="cb38-5"><a href="#cb38-5"></a>  case_data <span class="ot">&lt;-</span> explanation_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(case <span class="sc">==</span> case_id)</span>
+<span id="cb38-6"><a href="#cb38-6"></a>  </span>
+<span id="cb38-7"><a href="#cb38-7"></a>  case_data <span class="sc">%&gt;%</span></span>
+<span id="cb38-8"><a href="#cb38-8"></a>    <span class="fu">mutate</span>(<span class="at">feature_desc =</span> <span class="fu">factor</span>(feature_desc, <span class="at">levels =</span> <span class="fu">rev</span>(feature_desc)),  <span class="co"># Ensure correct ordering</span></span>
+<span id="cb38-9"><a href="#cb38-9"></a>           <span class="at">label =</span> <span class="fu">ifelse</span>(feature_weight <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="st">"Supports"</span>, <span class="st">"Contradicts"</span>),</span>
+<span id="cb38-10"><a href="#cb38-10"></a>           <span class="at">color =</span> <span class="fu">ifelse</span>(label <span class="sc">==</span> <span class="st">"Supports"</span>, <span class="st">"#4682b4"</span>, <span class="st">"#b22222"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb38-11"><a href="#cb38-11"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> feature_desc, <span class="at">y =</span> feature_weight, <span class="at">fill =</span> label)) <span class="sc">+</span></span>
+<span id="cb38-12"><a href="#cb38-12"></a>    <span class="fu">geom_col</span>(<span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb38-13"><a href="#cb38-13"></a>    <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb38-14"><a href="#cb38-14"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Feature"</span>, <span class="at">y =</span> <span class="st">"Weight"</span>) <span class="sc">+</span></span>
+<span id="cb38-15"><a href="#cb38-15"></a>    <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Supports"</span> <span class="ot">=</span> <span class="st">"#4682b4"</span>, <span class="st">"Contradicts"</span> <span class="ot">=</span> <span class="st">"#b22222"</span>)) <span class="sc">+</span></span>
+<span id="cb38-16"><a href="#cb38-16"></a>    <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb38-17"><a href="#cb38-17"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>)) <span class="sc">+</span>  <span class="co"># Rotate x-axis labels for better readability</span></span>
+<span id="cb38-18"><a href="#cb38-18"></a>    <span class="co">#geom_text(aes(label = feature_weight), position = position_stack(vjust = 0.5), color = "white") +</span></span>
+<span id="cb38-19"><a href="#cb38-19"></a>    <span class="fu">ggtitle</span>(<span class="fu">paste0</span>(<span class="st">"Case: "</span>, case_id, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb38-20"><a href="#cb38-20"></a>                   <span class="st">"Label: "</span>, <span class="fu">unique</span>(case_data<span class="sc">$</span>label), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb38-21"><a href="#cb38-21"></a>                   <span class="st">"Probability: "</span>, <span class="fu">round</span>(<span class="fu">unique</span>(case_data<span class="sc">$</span>label_prob), <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb38-22"><a href="#cb38-22"></a>                   <span class="st">"Explanation Fit: "</span>, <span class="fu">round</span>(<span class="fu">unique</span>(case_data<span class="sc">$</span>model_r2), <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb38-23"><a href="#cb38-23"></a>    <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">face =</span> <span class="st">"bold"</span>, <span class="at">size =</span> <span class="dv">12</span>))</span>
+<span id="cb38-24"><a href="#cb38-24"></a>}</span>
+<span id="cb38-25"><a href="#cb38-25"></a></span>
+<span id="cb38-26"><a href="#cb38-26"></a><span class="co"># Example usage with your explanation data</span></span>
+<span id="cb38-27"><a href="#cb38-27"></a><span class="fu">plot_features_custom</span>(explanation, <span class="at">case_id =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure"><p><a href="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-4.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="07_explain_black_box_with_lime_files/figure-html/unnamed-chunk-1-4.png" class="img-fluid figure-img" width="672"></a></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1"></a><span class="co"># Define a custom plot function for plot_explanations()</span></span>
-<span id="cb58-2"><a href="#cb58-2"></a>plot_explanations_custom <span class="ot">&lt;-</span> <span class="cf">function</span>(explanation, ...) {</span>
-<span id="cb58-3"><a href="#cb58-3"></a>  num_cases <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">suppressWarnings</span>(<span class="fu">as.numeric</span>(explanation<span class="sc">$</span>case)))</span>
-<span id="cb58-4"><a href="#cb58-4"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">anyNA</span>(num_cases)) {</span>
-<span id="cb58-5"><a href="#cb58-5"></a>    explanation<span class="sc">$</span>case <span class="ot">&lt;-</span> <span class="fu">factor</span>(explanation<span class="sc">$</span>case, <span class="at">levels =</span> <span class="fu">as.character</span>(<span class="fu">sort</span>(num_cases)))</span>
-<span id="cb58-6"><a href="#cb58-6"></a>  }</span>
-<span id="cb58-7"><a href="#cb58-7"></a>  explanation<span class="sc">$</span>feature_desc <span class="ot">&lt;-</span> <span class="fu">factor</span>(</span>
-<span id="cb58-8"><a href="#cb58-8"></a>    explanation<span class="sc">$</span>feature_desc,</span>
-<span id="cb58-9"><a href="#cb58-9"></a>    <span class="at">levels =</span> <span class="fu">rev</span>(<span class="fu">unique</span>(explanation<span class="sc">$</span>feature_desc[<span class="fu">order</span>(explanation<span class="sc">$</span>feature, explanation<span class="sc">$</span>feature_value)]))</span>
-<span id="cb58-10"><a href="#cb58-10"></a>  )</span>
-<span id="cb58-11"><a href="#cb58-11"></a>  p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(explanation, <span class="fu">aes_</span>(<span class="sc">~</span>case, <span class="sc">~</span>feature_desc)) <span class="sc">+</span></span>
-<span id="cb58-12"><a href="#cb58-12"></a>    <span class="fu">geom_tile</span>(<span class="fu">aes_</span>(<span class="at">fill =</span> <span class="sc">~</span>feature_weight)) <span class="sc">+</span></span>
-<span id="cb58-13"><a href="#cb58-13"></a>    <span class="fu">scale_x_discrete</span>(<span class="st">'Case'</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
-<span id="cb58-14"><a href="#cb58-14"></a>    <span class="fu">scale_y_discrete</span>(<span class="st">'Feature'</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
-<span id="cb58-15"><a href="#cb58-15"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="st">'Feature</span><span class="sc">\n</span><span class="st">weight'</span>, <span class="at">low =</span> <span class="st">'#b22222'</span>, <span class="at">mid =</span> <span class="st">'white'</span>, <span class="at">high =</span> <span class="st">'#4682b4'</span>) <span class="sc">+</span></span>
-<span id="cb58-16"><a href="#cb58-16"></a>    <span class="fu">theme_light</span>() <span class="sc">+</span></span>
-<span id="cb58-17"><a href="#cb58-17"></a>    <span class="fu">theme</span>(<span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">colour =</span> <span class="st">'grey'</span>, <span class="at">size =</span> <span class="dv">1</span>),</span>
-<span id="cb58-18"><a href="#cb58-18"></a>          <span class="at">panel.grid =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb58-19"><a href="#cb58-19"></a>          <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">vjust =</span> <span class="dv">1</span>))</span>
-<span id="cb58-20"><a href="#cb58-20"></a>  p <span class="sc">+</span> <span class="fu">facet_wrap</span>(<span class="sc">~</span>label)</span>
-<span id="cb58-21"><a href="#cb58-21"></a>}</span>
-<span id="cb58-22"><a href="#cb58-22"></a></span>
-<span id="cb58-23"><a href="#cb58-23"></a><span class="co"># Use this function with your explanation data</span></span>
-<span id="cb58-24"><a href="#cb58-24"></a><span class="fu">plot_explanations_custom</span>(explanation)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a><span class="co"># Define a custom plot function for plot_explanations()</span></span>
+<span id="cb39-2"><a href="#cb39-2"></a>plot_explanations_custom <span class="ot">&lt;-</span> <span class="cf">function</span>(explanation, ...) {</span>
+<span id="cb39-3"><a href="#cb39-3"></a>  explanation<span class="sc">$</span>feature_desc <span class="ot">&lt;-</span> <span class="fu">factor</span>(</span>
+<span id="cb39-4"><a href="#cb39-4"></a>    explanation<span class="sc">$</span>feature_desc,</span>
+<span id="cb39-5"><a href="#cb39-5"></a>    <span class="at">levels =</span> <span class="fu">rev</span>(<span class="fu">unique</span>(</span>
+<span id="cb39-6"><a href="#cb39-6"></a>      explanation<span class="sc">$</span>feature_desc[</span>
+<span id="cb39-7"><a href="#cb39-7"></a>        <span class="fu">order</span>(explanation<span class="sc">$</span>feature, explanation<span class="sc">$</span>feature_value)</span>
+<span id="cb39-8"><a href="#cb39-8"></a>        ]))</span>
+<span id="cb39-9"><a href="#cb39-9"></a>  )</span>
+<span id="cb39-10"><a href="#cb39-10"></a></span>
+<span id="cb39-11"><a href="#cb39-11"></a>  num_cases <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">suppressWarnings</span>(<span class="fu">as.numeric</span>(explanation<span class="sc">$</span>case)))</span>
+<span id="cb39-12"><a href="#cb39-12"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">anyNA</span>(num_cases)) {</span>
+<span id="cb39-13"><a href="#cb39-13"></a>    explanation<span class="sc">$</span>case <span class="ot">&lt;-</span> <span class="fu">factor</span>(explanation<span class="sc">$</span>case, <span class="at">levels =</span> <span class="fu">as.character</span>(<span class="fu">sort</span>(num_cases)))</span>
+<span id="cb39-14"><a href="#cb39-14"></a>  }</span>
+<span id="cb39-15"><a href="#cb39-15"></a>  p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(explanation, <span class="fu">aes_</span>(<span class="sc">~</span>case, <span class="sc">~</span>feature_desc)) <span class="sc">+</span></span>
+<span id="cb39-16"><a href="#cb39-16"></a>    <span class="fu">geom_tile</span>(<span class="fu">aes_</span>(<span class="at">fill =</span> <span class="sc">~</span>feature_weight)) <span class="sc">+</span></span>
+<span id="cb39-17"><a href="#cb39-17"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="st">'Feature</span><span class="sc">\n</span><span class="st">weight'</span>, <span class="at">low =</span> <span class="st">'#b22222'</span>, <span class="at">mid =</span> <span class="st">'white'</span>, <span class="at">high =</span> <span class="st">'#4682b4'</span>) <span class="sc">+</span></span>
+<span id="cb39-18"><a href="#cb39-18"></a>    <span class="fu">scale_x_discrete</span>(<span class="st">'Case'</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb39-19"><a href="#cb39-19"></a>    <span class="fu">scale_y_discrete</span>(<span class="st">'Feature'</span>, <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb39-20"><a href="#cb39-20"></a>    <span class="fu">theme_light</span>() <span class="sc">+</span></span>
+<span id="cb39-21"><a href="#cb39-21"></a>    <span class="fu">theme</span>(<span class="at">panel.border =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">colour =</span> <span class="st">'grey'</span>, <span class="at">size =</span> <span class="dv">1</span>),</span>
+<span id="cb39-22"><a href="#cb39-22"></a>          <span class="at">panel.grid =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb39-23"><a href="#cb39-23"></a>          <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">vjust =</span> <span class="dv">1</span>))</span>
+<span id="cb39-24"><a href="#cb39-24"></a>  p <span class="sc">+</span> <span class="fu">facet_wrap</span>(<span class="sc">~</span>label)</span>
+<span id="cb39-25"><a href="#cb39-25"></a>}</span>
+<span id="cb39-26"><a href="#cb39-26"></a></span>
+<span id="cb39-27"><a href="#cb39-27"></a><span class="co"># Use this function with your explanation data</span></span>
+<span id="cb39-28"><a href="#cb39-28"></a><span class="fu">plot_explanations_custom</span>(explanation)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning: `aes_()` was deprecated in ggplot2 3.0.0.
 #&gt; ℹ Please use tidy evaluation idioms with `aes()`</code></pre>
@@ -1785,7 +1667,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
-<script>var lightboxQuarto = GLightbox({"selector":".lightbox","closeEffect":"zoom","descPosition":"bottom","loop":true,"openEffect":"zoom"});</script>
+<script>var lightboxQuarto = GLightbox({"openEffect":"zoom","closeEffect":"zoom","loop":true,"descPosition":"bottom","selector":".lightbox"});</script>
 
 
 </body></html>
